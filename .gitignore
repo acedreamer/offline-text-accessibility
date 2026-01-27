@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model cache (large files)
+*.bin
+*.safetensors
+
+# Docs - exclude all except design.md
+docs/*
+!docs/design.md
+
+# Project state file
+PROJECT_STATE.md.txt
+project state.md
+
+# Claude agent configs (optional - remove this line if you want to include them)
+# .claude/
