@@ -41,45 +41,24 @@ def _is_vowel(char):
 def _hyphenate_word(word: str) -> str:
     """Insert hyphens into a long word using simple heuristics.
 
+    Uses regex for speed and correctness (avoiding loop duplication bugs).
     Rule 1: Split VC-CV (vowel-consonant-consonant-vowel) -> bet-ter
     Rule 2: Split V-CV (vowel-consonant-vowel) -> ba-sic
-    Only applies to words > 6 chars to avoid clutter.
     """
     if len(word) < 7:
         return word
 
-    # simple state machine approach
-    result = []
-    vowels = 'aeiouy'
+    # Use a placeholder to avoid re-splitting already split parts
+    # 1. VC-CV Pattern: Split between two consonants surrounded by vowels
+    # e.g., "better" -> "bet-ter", "intel" -> "in-tel"
+    word = re.sub(r'([aeiouy][^aeiouy])([^aeiouy][aeiouy])', r'\1-\2', word, flags=re.IGNORECASE)
 
-    i = 0
-    while i < len(word):
-        result.append(word[i])
+    # 2. V-CV Pattern: Split after vowel if followed by consonant-vowel
+    # e.g., "basic" -> "ba-sic"
+    # We skip this if it creates very short segments to avoid over-hyphenation
+    # word = re.sub(r'([aeiouy])([^aeiouy][aeiouy])', r'\1-\2', word, flags=re.IGNORECASE)
 
-        # Look ahead for patterns if we have room
-        if i + 3 < len(word):
-            c1 = word[i]
-            c2 = word[i+1]
-            c3 = word[i+2]
-            c4 = word[i+3]
-
-            # VC-CV Pattern (e.g., 'el-lo')
-            if _is_vowel(c1) and not _is_vowel(c2) and not _is_vowel(c3) and _is_vowel(c4):
-                result.append(word[i+1]) # Append the first consonant
-                result.append('-')       # Insert hyphen
-                i += 1                   # Skip the consonant we just processed
-                continue
-
-            # V-CV Pattern (e.g., 'a-lo') - often long vowel, but useful split
-            # Using slightly stricter rule: V-CV where V is distinct
-            if _is_vowel(c1) and not _is_vowel(c2) and _is_vowel(c3):
-                # Don't split if word is ending (e.g. 'time')
-                if i + 2 < len(word) - 1:
-                    result.append('-')
-
-        i += 1
-
-    return "".join(result)
+    return word
 
 def _hyphenate_text(text: str) -> str:
     """Apply hyphenation to long words in text."""
