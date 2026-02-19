@@ -22,9 +22,11 @@ Thumbs.db
 *.bin
 *.safetensors
 
-# Docs - exclude all except design.md
+# Docs - exclude all except design.md, paper.tex, references.bib
 docs/*
 !docs/design.md
+!docs/paper.tex
+!docs/references.bib
 
 # Project state file
 PROJECT_STATE.md.txt

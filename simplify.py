@@ -2,7 +2,20 @@
 """CLI tool for text simplification with different accessibility modes."""
 
 import argparse
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+import os
+import warnings
+import logging
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["HF_HUB_VERBOSITY"] = "error"
+warnings.filterwarnings("ignore")
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
+from transformers import T5ForConditionalGeneration, T5Tokenizer, logging as hf_logging
+from transformers.utils import logging as hf_utils_logging
+
+hf_logging.set_verbosity_error()
+hf_utils_logging.disable_progress_bar()
 
 # Import mode-specific logic
 from dyslexia_mode import format_for_dyslexia
