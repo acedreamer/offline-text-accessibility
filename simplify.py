@@ -13,27 +13,68 @@ from autism_mode import format_for_autism
 from utils import read_input_file, split_sentences, compute_metrics, print_metrics
 
 
-# Global model and tokenizer (loaded once)
-_model = None
-_tokenizer = None
+# Cache for loaded models
+_models = {}
 
 
-def _load_model():
-    """Load T5 model and tokenizer if not already loaded."""
-    global _model, _tokenizer
-    if _model is None:
-        _tokenizer = T5Tokenizer.from_pretrained("t5-small")
-        _model = T5ForConditionalGeneration.from_pretrained("t5-small")
-        _model.eval()
-    return _model, _tokenizer
+def _select_by_task_complexity(text: str) -> str:
+    """Select model based on text complexity."""
+    words = text.split()
+    if not words:
+        return "t5-small"
+
+    avg_word_len = sum(len(w) for w in words) / len(words)
+
+    # Heuristic: longer words = more complex = needs better model
+    if avg_word_len > 6 or len(words) > 200:
+        return "t5-medium"
+    return "t5-small"
 
 
-def simplify_with_t5(text: str) -> str:
-    """Simplify text using T5-small model.
+def _select_by_device() -> str:
+    """Select model based on available system RAM."""
+    try:
+        import psutil
+        available_gb = psutil.virtual_memory().available / (1024**3)
+
+        # t5-medium needs ~2GB RAM for comfortable operation
+        if available_gb > 4:
+            return "t5-medium"
+        return "t5-small"
+    except ImportError:
+        # psutil not available, default to small model
+        return "t5-small"
+
+
+def _select_model(choice: str, text: str) -> str:
+    """Determine which model to use."""
+    if choice == "small":
+        return "t5-small"
+    elif choice == "medium":
+        return "t5-medium"
+    elif choice == "auto-task":
+        return _select_by_task_complexity(text)
+    elif choice == "auto-device":
+        return _select_by_device()
+    return "t5-small"  # default
+
+
+def _load_model(model_name: str):
+    """Load specified T5 model."""
+    if model_name not in _models:
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
+        model = T5ForConditionalGeneration.from_pretrained(model_name)
+        model.eval()
+        _models[model_name] = (model, tokenizer)
+    return _models[model_name]
+
+
+def simplify_with_t5(text: str, model_name: str = "t5-small") -> str:
+    """Simplify text using T5 model.
 
     Processes sentence by sentence for better results.
     """
-    model, tokenizer = _load_model()
+    model, tokenizer = _load_model(model_name)
 
     sentences = split_sentences(text)
     simplified = []
@@ -57,10 +98,10 @@ def simplify_with_t5(text: str) -> str:
     return " ".join(simplified)
 
 
-def process_text(text: str, mode: str) -> str:
+def process_text(text: str, mode: str, model_name: str = "t5-small") -> str:
     """Process text according to the specified mode."""
     # 1. Neural Simplification (Shared)
-    simplified = simplify_with_t5(text)
+    simplified = simplify_with_t5(text, model_name)
 
     # 2. Mode-Specific Post-Processing
     if mode == "dyslexia":
@@ -89,6 +130,12 @@ def main():
         help="Accessibility mode for text processing"
     )
     parser.add_argument(
+        "--model",
+        choices=["small", "medium", "auto-task", "auto-device"],
+        default="small",
+        help="Model to use: small (fast), medium (better quality), auto-task (based on complexity), auto-device (based on RAM)"
+    )
+    parser.add_argument(
         "--metrics",
         action="store_true",
         help="Show readability metrics (before vs after)"
@@ -97,7 +144,11 @@ def main():
     args = parser.parse_args()
 
     text = read_input_file(args.input)
-    result = process_text(text, args.mode)
+
+    # Select appropriate model
+    model_name = _select_model(args.model, text)
+
+    result = process_text(text, args.mode, model_name)
     print(result)
 
     if args.metrics:

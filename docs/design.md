@@ -4,20 +4,43 @@ This project is an offline, privacy-preserving AI text simplification tool.
 
 ## Scope and Mode Support
 
-The system supports multiple accessibility-oriented modes through a unified
-architecture. In the current prototype, Dyslexia Mode is fully implemented
-and quantitatively evaluated.
+The system supports three accessibility-oriented modes through a unified
+architecture. All three modes are fully implemented. Dyslexia Mode is
+quantitatively evaluated; ADHD and Autism modes are functionally complete
+but not yet formally evaluated.
 
-ADHD and Autism modes are included at the interface and architectural level
-to demonstrate extensibility of the system design. These modes are not
-evaluated in the present work and are considered part of future development.
+Implemented modes:
+- Dyslexia (sentence simplification, hyphenation, one-sentence-per-line)
+- ADHD (progress markers, bullet formatting, key term bolding)
+- Autism (idiom replacement with literal meanings)
 
-Primary evaluated mode:
-- Dyslexia support (sentence simplification, readability improvement)
+## ADHD Mode
 
-Other modes (design extensions, not evaluated):
-- ADHD (chunking, focus-friendly output)
-- Autism (literal phrasing, reduced ambiguity)
+ADHD mode formats simplified text to reduce cognitive load and help users
+maintain attention. Features:
+
+- Progress markers: Each sentence is prefixed with `[i/N]` where N is the
+  total sentence count. This gives users a concrete sense of how far through
+  the text they are.
+- Bullet-style layout: One sentence per line, visually chunked.
+- Key term bolding: The first significant content word in each sentence is
+  wrapped in `**bold**` markers to anchor the reader's attention.
+
+Implementation file: `adhd_mode.py`
+
+## Autism Mode
+
+Autism mode targets literal interpretation by replacing figurative and
+idiomatic language with explicit, unambiguous alternatives. Features:
+
+- Idiom replacement: A curated dictionary of 20 common English idioms is
+  applied via regex, replacing each with its literal meaning.
+  Example: "piece of cake" → "easy", "under the weather" → "feeling sick"
+- Case-insensitive matching with word-boundary constraints to avoid
+  false positives.
+- No pronoun resolution (deferred - requires coreference NLP).
+
+Implementation file: `autism_mode.py`
 
 ## Core Constraints
 
@@ -37,10 +60,12 @@ Other modes (design extensions, not evaluated):
 ## T5 Task Conditioning Strategy
 
 Text simplification is implemented using a T5-based sequence-to-sequence model.
-Inputs are task-conditioned using the `simplify:` prefix to encourage semantic
-preservation while reducing syntactic complexity. This approach was chosen
-over summarization prompts to avoid information loss, which is critical for
-assistive accessibility tools.
+Inputs are task-conditioned using the `summarize:` prefix, which T5-small
+responds to reliably due to its pretraining on CNN/DailyMail summarization.
+While a `simplify:` prefix would be semantically cleaner, T5-small was not
+pretrained on a simplification corpus and produces better outputs with the
+`summarize:` prompt. This is a deliberate trade-off documented here for
+transparency.
 
 ## Dyslexia-Oriented Linguistic Heuristics
 
