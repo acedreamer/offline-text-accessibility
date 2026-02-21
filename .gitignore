@@ -22,11 +22,12 @@ Thumbs.db
 *.bin
 *.safetensors
 
-# Docs - exclude all except design.md, paper.tex, references.bib
+# Docs - exclude all except design.md, paper.tex, references.bib, notebook
 docs/*
 !docs/design.md
 !docs/paper.tex
 !docs/references.bib
+!docs/finetune_colab.ipynb
 
 # Project state file
 PROJECT_STATE.md.txt
