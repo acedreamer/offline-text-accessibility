@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-primary: #135bec;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-badge-good: #16a34a;
+  --font-size-body: 16px;
+}
+
+html.dark {
+  --color-bg: #101622;
+  --color-surface: #1e2635;
+  --color-text: #f1f5f9;
+  --color-border: #334155;
+}
+
+html.high-contrast {
+  --color-bg: #000000;
+  --color-surface: #000000;
+  --color-primary: #ffff00;
+  --color-text: #ffffff;
+  --color-border: #ffffff;
+  --color-badge-good: #ffff00;
+  font-weight: 700;
+}
+
+.dyslexia-text {
+  line-height: 1.8;
+  letter-spacing: 0.07em;
+  word-spacing: 0.15em;
+}
+
+.active-sentence {
+  background: rgba(74, 143, 227, 0.12);
+  border-left: 4px solid #4a8fe3;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.dimmed-text {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+html.high-contrast .active-sentence {
+  background: rgba(255, 255, 0, 0.15);
+  border-left-color: #ffff00;
+}
+
+@theme {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-primary: var(--color-primary);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-badge-good: var(--color-badge-good);
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-size: var(--font-size-body);
+}
+
+/* Font Families */
+body.lexend-font { font-family: 'Lexend', sans-serif; }
+body.opendyslexic-font { font-family: 'OpenDyslexic', sans-serif; }
+body.merriweather-font { font-family: 'Merriweather', serif; }
+body.mono-font { font-family: monospace; }
+
+/* Global transitions respected unless reduced motion is on */
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.reduce-motion) * {
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Prevent transition on specific elements if needed to avoid jitter */
+.no-transition * {
+  transition: none !important;
+}

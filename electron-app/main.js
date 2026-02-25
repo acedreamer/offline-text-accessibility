@@ -1,0 +1,105 @@
+import { app, BrowserWindow, ipcMain } from 'electron'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { spawn } from 'child_process'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+let pythonProcess = null;
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    }
+  })
+
+  // Start Python backend process
+  const backendPath = path.join(__dirname, '..', 'simplify_server.py');
+  console.log('Starting Python backend:', backendPath);
+
+  // Use python3 if available, otherwise python
+  const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+  pythonProcess = spawn(pythonCmd, [backendPath]);
+
+  pythonProcess.stdout.on('data', (data) => {
+    // We only use stdout for response processing in ipcMain below,
+    // but log it here if needed for debugging
+    // console.log(`Python stdout: ${data}`);
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`Python stderr: ${data}`);
+  });
+
+  pythonProcess.on('close', (code) => {
+    console.log(`Python process exited with code ${code}`);
+  });
+
+  if (process.env.VITE_DEV_SERVER_URL) {
+    win.loadURL(process.env.VITE_DEV_SERVER_URL)
+    win.webContents.openDevTools()
+  } else {
+    win.loadFile(path.join(__dirname, 'dist/index.html'))
+  }
+}
+
+app.whenReady().then(() => {
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('will-quit', () => {
+  if (pythonProcess) {
+    pythonProcess.kill();
+  }
+})
+
+// IPC Handler
+ipcMain.handle('simplify', async (event, payload) => {
+  return new Promise((resolve, reject) => {
+    if (!pythonProcess) {
+      reject(new Error("Python process is not running"));
+      return;
+    }
+
+    // Function to handle the exact response we're waiting for
+    const handleResponse = (data) => {
+      try {
+        const result = JSON.parse(data.toString());
+        pythonProcess.stdout.off('data', handleResponse);
+
+        if (result.error) {
+          reject(new Error(result.error));
+        } else {
+          resolve(result);
+        }
+      } catch (err) {
+        // Might be receiving partial JSON or just logging info
+        // Ignore until we get a valid JSON response
+      }
+    };
+
+    pythonProcess.stdout.on('data', handleResponse);
+
+    // Send the request
+    const requestJson = JSON.stringify(payload) + '\n';
+    pythonProcess.stdin.write(requestJson);
+  });
+})

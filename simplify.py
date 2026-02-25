@@ -34,14 +34,14 @@ def _select_by_task_complexity(text: str) -> str:
     """Select model based on text complexity."""
     words = text.split()
     if not words:
-        return "t5-small"
+        return "./t5-simplifier"
 
     avg_word_len = sum(len(w) for w in words) / len(words)
 
     # Heuristic: longer words = more complex = needs better model
     if avg_word_len > 6 or len(words) > 200:
         return "t5-medium"
-    return "t5-small"
+    return "./t5-simplifier"
 
 
 def _select_by_device() -> str:
@@ -53,23 +53,23 @@ def _select_by_device() -> str:
         # t5-medium needs ~2GB RAM for comfortable operation
         if available_gb > 4:
             return "t5-medium"
-        return "t5-small"
+        return "./t5-simplifier"
     except ImportError:
-        # psutil not available, default to small model
-        return "t5-small"
+        # psutil not available, default to fine-tuned model
+        return "./t5-simplifier"
 
 
 def _select_model(choice: str, text: str) -> str:
     """Determine which model to use."""
     if choice == "small":
-        return "t5-small"
+        return "./t5-simplifier"
     elif choice == "medium":
         return "t5-medium"
     elif choice == "auto-task":
         return _select_by_task_complexity(text)
     elif choice == "auto-device":
         return _select_by_device()
-    return "t5-small"  # default
+    return "./t5-simplifier"  # default
 
 
 def _load_model(model_name: str):
@@ -82,7 +82,7 @@ def _load_model(model_name: str):
     return _models[model_name]
 
 
-def simplify_with_t5(text: str, model_name: str = "t5-small") -> str:
+def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
     """Simplify text using T5 model.
 
     Processes sentence by sentence for better results.
@@ -93,7 +93,7 @@ def simplify_with_t5(text: str, model_name: str = "t5-small") -> str:
     simplified = []
 
     for sentence in sentences:
-        input_text = f"summarize: {sentence}"
+        input_text = f"simplify: {sentence}"
         inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=512)
 
         outputs = model.generate(
@@ -101,7 +101,8 @@ def simplify_with_t5(text: str, model_name: str = "t5-small") -> str:
             attention_mask=inputs["attention_mask"],
             max_length=128,
             num_beams=4,
-            length_penalty=1.0,
+            length_penalty=0.8,
+            no_repeat_ngram_size=3,
             early_stopping=True,
         )
 

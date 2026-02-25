@@ -18,16 +18,25 @@ env/
 .DS_Store
 Thumbs.db
 
-# Model cache (large files)
+# Model weights (large files - download separately or via fine-tune notebook)
 *.bin
 *.safetensors
 
-# Docs - exclude all except design.md, paper.tex, references.bib, notebook
-docs/*
-!docs/design.md
-!docs/paper.tex
-!docs/references.bib
-!docs/finetune_colab.ipynb
+# Training checkpoints (large, intermediate - only final model matters)
+t5-simplifier/checkpoint-*/
+
+# Electron node_modules
+electron-app/node_modules/
+
+# stitch design files (local reference only)
+stitch/
+
+# Misc
+test_input.txt
+.claude/settings.local.json
+
+# Docs - exclude PDFs, include everything else
+docs/*.pdf
 
 # Project state file
 PROJECT_STATE.md.txt

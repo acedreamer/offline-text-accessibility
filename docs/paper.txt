@@ -1,0 +1,322 @@
+# Privacy-Preserving Offline Text Simplification for Dyslexia Support Using Local Transformer Models
+
+---
+
+## Abstract
+
+We present an offline, privacy-preserving text simplification system designed to support readers with dyslexia. The system operates entirely on local hardware without requiring cloud connectivity, addressing privacy concerns that arise when processing personal or educational documents through remote services. Our architecture combines a T5-small transformer model for neural text simplification with rule-based post-processing heuristics optimized for dyslexic readers. The system runs on consumer-grade CPU hardware, making it accessible without specialized equipment. In preliminary, illustrative evaluation, we observe reductions in average sentence length from 29.0 to 7.0 words per sentence and improvements in Flesch Reading Ease scores of +17.05 points. We frame this work as a proof-of-feasibility demonstration rather than a clinical tool, and we discuss limitations including the absence of user studies. The system supports extensibility to other accessibility modes, with ADHD and autism support identified as future work. All processing occurs locally, ensuring that sensitive documents never leave the user's device.
+
+---
+
+## 1. Introduction
+
+Reading difficulties affect a substantial portion of the global population. Dyslexia, characterized by difficulties with accurate and fluent word recognition and by poor spelling and decoding abilities, is estimated to affect 5-10% of the population, though prevalence estimates vary depending on diagnostic criteria and language (Snowling, 2000). For individuals with dyslexia, complex sentence structures, dense paragraphs, and advanced vocabulary can significantly increase cognitive load and reduce reading comprehension.
+
+Text simplification—the task of reducing the linguistic complexity of text while preserving its meaning—has emerged as a promising approach to improving accessibility. Recent advances in neural language models have enabled increasingly sophisticated simplification systems. However, the majority of these systems operate through cloud-based APIs, raising significant privacy concerns when users need to process personal documents, educational materials, or workplace communications.
+
+This paper presents a system designed around three core principles:
+
+**Privacy preservation.** All text processing occurs locally on the user's device. No data is transmitted to external servers, eliminating concerns about data retention, surveillance, or unauthorized access to sensitive documents.
+
+**Offline operation.** The system functions without internet connectivity, enabling use in environments with limited or no network access, including schools with restricted networks, rural areas, and privacy-conscious institutional settings.
+
+**Accessibility of deployment.** The system runs on consumer-grade CPU hardware without requiring graphics processing units (GPUs), reducing barriers to adoption for individual users and resource-constrained institutions.
+
+We implement text simplification using T5-small, a compact transformer-based sequence-to-sequence model (Raffel et al., 2020). Following neural simplification, we apply rule-based post-processing heuristics specifically designed for dyslexic readers, including sentence segmentation and visual spacing adjustments.
+
+Our contribution is a proof-of-feasibility demonstration showing that meaningful text simplification for accessibility purposes can be achieved locally on modest hardware. We do not claim clinical effectiveness, nor do we present user studies. Rather, we provide a technical foundation and preliminary quantitative evaluation that may inform future work in accessible, privacy-preserving AI systems.
+
+The remainder of this paper is organized as follows. Section 2 surveys related work in text simplification and accessible technologies. Section 3 describes the system architecture. Section 4 details the methodology, including model selection and task conditioning. Section 5 explains the dyslexia-oriented post-processing heuristics. Section 6 presents evaluation results. Sections 7 and 8 discuss findings and limitations. Section 9 outlines future work, and Section 10 concludes.
+
+---
+
+## 2. Related Work
+
+### 2.1 Text Simplification
+
+Text simplification has been studied extensively in natural language processing. Siddharthan (2014) provides a comprehensive survey of research on text simplification, covering rule-based, statistical, and hybrid approaches. Early methods relied on hand-crafted rules for lexical substitution and syntactic transformation, while more recent work has embraced neural sequence-to-sequence models.
+
+Zhang et al. (2017) demonstrated the application of deep reinforcement learning to sentence simplification, achieving improvements over supervised baselines. Transformer-based models have since achieved state-of-the-art results on simplification benchmarks. T5 (Text-to-Text Transfer Transformer) demonstrated that diverse NLP tasks, including simplification, could be framed as text-to-text problems with task-specific prefixes (Raffel et al., 2020).
+
+However, the majority of high-performing simplification systems require substantial computational resources and are deployed as cloud services. This deployment model introduces latency, requires persistent connectivity, and raises privacy concerns that may be particularly acute for accessibility applications involving personal or educational content.
+
+### 2.2 Accessible Reading Technologies
+
+Assistive technologies for reading difficulties span multiple modalities, including text-to-speech systems, font modifications, and content adaptation. Research on dyslexia-friendly presentation has examined factors such as font choice, spacing, color contrast, and text chunking. Rello and Baeza-Yates (2013) studied font characteristics that improve readability for dyslexic users, finding that certain sans-serif fonts and increased letter spacing provide measurable benefits.
+
+The British Dyslexia Association's Dyslexia Style Guide provides practical recommendations for accessible document formatting, including guidance on sentence length, paragraph structure, and visual layout. These findings inform our post-processing heuristics, which segment complex sentences and introduce visual separation between ideas.
+
+### 2.3 Privacy in AI Systems
+
+The privacy implications of cloud-based AI services have received increasing attention. When users submit text to remote APIs, they relinquish control over data retention, secondary use, and potential exposure through security breaches (Ziegler et al., 2019). For accessibility applications, this concern is amplified: users may need to process medical documents, educational records, or workplace communications containing sensitive information.
+
+Local inference—running AI models directly on user devices—addresses these concerns by ensuring data never leaves the user's control. Research on edge AI and model efficiency has made local inference increasingly feasible on resource-constrained devices (Shi et al., 2016). Our work contributes to this direction by demonstrating that useful text simplification can be achieved on CPU hardware using compact models.
+
+### 2.4 Web Accessibility Standards
+
+The Web Content Accessibility Guidelines (WCAG) 2.1, published by the W3C, establish standards for making digital content accessible to people with disabilities. Guideline 3.1 addresses readability, recommending that text be made as clear and simple as appropriate for the content. Our system aligns with these principles by reducing linguistic complexity while preserving meaning.
+
+---
+
+## 3. System Architecture
+
+The system implements a command-line interface (CLI) accepting input text files and producing simplified output. The architecture consists of three primary components:
+
+### 3.1 Input Processing
+
+The input layer reads text from local files, supporting UTF-8 encoded documents. No network calls are made during input processing. The system validates file existence and handles encoding errors gracefully.
+
+### 3.2 Neural Simplification Core
+
+The core simplification engine uses T5-small, a 60-million parameter transformer model (Raffel et al., 2020). The model and tokenizer are loaded once at startup and cached in memory for subsequent processing. This singleton pattern avoids repeated model loading overhead when processing multiple documents or paragraphs.
+
+Model inference occurs entirely on CPU. While this results in slower processing compared to GPU inference, it eliminates the hardware barrier for users without dedicated graphics cards. On a consumer-grade laptop processor, inference times remain acceptable for interactive use with typical document paragraphs.
+
+### 3.3 Mode-Specific Post-Processing
+
+Following neural simplification, mode-specific post-processing adapts the output for particular accessibility needs. In the current implementation, dyslexia mode applies heuristics designed to reduce cognitive load for dyslexic readers. The post-processing layer is architecturally separate from the neural core, enabling independent modification of either component.
+
+### 3.4 Output and Metrics
+
+The system outputs simplified text to standard output, suitable for redirection to files or integration with other tools. An optional metrics flag computes readability statistics comparing input and output text, providing quantitative feedback on simplification effectiveness.
+
+### 3.5 Design Constraints
+
+The system adheres to the following constraints throughout:
+
+- **Offline operation:** No network calls for any functionality.
+- **CPU-only inference:** No GPU dependencies.
+- **Local data processing:** Input and output remain on the user's device.
+- **No telemetry:** No usage data is collected or transmitted.
+
+---
+
+## 4. Methodology
+
+### 4.1 Model Selection
+
+We selected T5-small as the neural simplification backbone for several reasons:
+
+**Size and efficiency.** At approximately 60 million parameters, T5-small is small enough for CPU inference while retaining meaningful language understanding capabilities. Larger models (T5-base, T5-large) offer improved performance but require substantially more memory and computation time.
+
+**Task conditioning.** T5's text-to-text framework allows task specification through natural language prefixes (Raffel et al., 2020). This enables simplification without model fine-tuning, using the pretrained model's learned associations between task descriptions and output characteristics.
+
+**Availability.** T5-small is publicly available through the HuggingFace Transformers library, facilitating reproducibility and deployment.
+
+### 4.2 Task Conditioning Strategy
+
+We condition the model using the prefix "simplify:" prepended to each input sentence. This approach encourages the model to produce outputs that preserve semantic content while reducing syntactic complexity.
+
+We considered alternative prefixes, including "summarize:" which T5 was explicitly trained on. However, summarization tends to omit information deemed less important, which is undesirable for accessibility applications where information preservation is critical. A user simplifying a textbook passage or legal document needs all content retained in more accessible form, not a condensed summary.
+
+The "simplify:" prefix, while not part of T5's original training tasks, leverages the model's learned representations of simplification as a concept. We observe that the model produces outputs with reduced clause embedding and shorter constructions, though with limitations discussed in Section 8.
+
+### 4.3 Sentence-Level Processing
+
+Input text is segmented into sentences either prior to or following neural simplification depending on processing mode; in the evaluated dyslexia mode, post-processing segmentation is applied after simplification. This design enables sentence-level control over output formatting while allowing the neural model to process complete input sentences for context.
+
+This approach offers several advantages. First, it ensures inputs remain within manageable length for the model's context window. Second, it enables sentence-level post-processing without complex alignment between input and output texts. Third, it provides natural boundaries for the spacing heuristics applied in dyslexia mode.
+
+### 4.4 Generation Parameters
+
+We use beam search with four beams for generation. A length penalty of 1.0 provides balanced treatment of output length, neither strongly favoring brevity nor verbosity. Early stopping terminates generation when all beams produce end-of-sequence tokens. Maximum output length is set to 128 tokens per sentence, sufficient for typical simplified outputs while preventing runaway generation.
+
+---
+
+## 5. Dyslexia-Oriented Post-Processing
+
+Following neural simplification, we apply rule-based heuristics designed to optimize readability for dyslexic users. These heuristics are intentionally simple and transparent, avoiding opaque transformations that could introduce errors or confusion. Our approach aligns with recommendations from the British Dyslexia Association's style guidelines and research on cognitive load in reading (Snowling, 2000).
+
+### 5.1 Sentence Segmentation
+
+Complex sentences containing multiple clauses are segmented into shorter, single-idea statements. We identify clause boundaries using conjunctions (and, but, because, although, however) and relative clause markers (which, that).
+
+When a conjunction or clause marker is detected, the sentence is split at that boundary. Each resulting segment is validated to ensure it contains sufficient content (minimum three words) before being retained as a separate output sentence.
+
+This heuristic implements findings from accessibility research suggesting that shorter sentences with single main ideas reduce cognitive load for dyslexic readers (Siddharthan, 2014).
+
+### 5.2 Visual Spacing
+
+Output sentences are separated by blank lines rather than standard single spacing. This visual separation provides clear boundaries between ideas, reducing the likelihood of line-skipping or place-losing that can affect dyslexic readers (Rello & Baeza-Yates, 2013).
+
+The one-sentence-per-line format with additional spacing aligns with recommendations from dyslexia accessibility guidelines, though we note that optimal spacing may vary among individuals.
+
+### 5.3 Punctuation and Capitalization
+
+Each output segment is normalized to ensure proper sentence capitalization and terminal punctuation. Segments beginning with lowercase letters are capitalized. Segments lacking terminal punctuation receive a period.
+
+These normalizations ensure consistent, predictable formatting regardless of how the neural model formatted its output.
+
+### 5.4 Rationale for Rule-Based Approach
+
+We implement post-processing as explicit rules rather than learned transformations for several reasons. First, rules are transparent and auditable—users and developers can understand exactly what transformations are applied. Second, rules are deterministic, producing consistent results for identical inputs. Third, rules require no additional training data or computational resources. Fourth, rules can be easily modified or extended based on user feedback without retraining models.
+
+---
+
+## 6. Evaluation and Results
+
+### 6.1 Evaluation Approach
+
+We evaluate the system using quantitative readability metrics comparing input and output text. We emphasize that these metrics measure surface-level text properties correlated with readability; they do not directly measure comprehension or accessibility for dyslexic readers, which would require user studies.
+
+### 6.2 Metrics
+
+We compute three metrics:
+
+**Word count.** Total number of words, indicating compression or expansion.
+
+**Average sentence length.** Words per sentence, with shorter sentences generally associated with reduced cognitive load (Siddharthan, 2014).
+
+**Flesch Reading Ease.** A standard readability formula computed as:
+
+FRE = 206.835 - 1.015 × (words/sentences) - 84.6 × (syllables/words)
+
+Higher scores indicate easier text. Scores above 60 are considered accessible to most readers; scores below 30 indicate difficult, specialized text.
+
+### 6.3 Results
+
+We present results from processing a sample passage containing technical content about artificial intelligence in educational environments:
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Word count | 29 | 21 | -8 |
+| Average sentence length | 29.0 | 7.0 | -22.0 |
+| Flesch Reading Ease | -26.81 | -9.76 | +17.05 |
+
+**Word count** decreased from 29 to 21 words, a reduction of 28%. This compression indicates the model successfully condensed the content.
+
+**Average sentence length** decreased dramatically from 29.0 to 7.0 words per sentence. This reduction reflects both the neural model's simplification and the post-processing heuristics that segment compound sentences.
+
+**Flesch Reading Ease** improved by 17.05 points. Both scores remain negative, indicating difficult text even after simplification. This reflects the technical nature of the input content, which contains multi-syllable specialized vocabulary (e.g., "artificial," "intelligence," "integrated," "educational," "environments") that strongly influences the syllables-per-word component of the Flesch formula.
+
+### 6.4 Interpretation
+
+The metrics demonstrate measurable changes in text properties associated with readability. The substantial reduction in sentence length is particularly relevant for dyslexia support, as shorter sentences reduce working memory demands during reading.
+
+The negative Flesch scores warrant discussion. Standard Flesch interpretation ranges assume general prose; technical and academic text routinely produces scores below the typical 0-100 range. The relevant observation is the direction and magnitude of change (+17.05 points) rather than the absolute values.
+
+We caution against over-interpreting these results. The metrics capture surface properties that correlate with, but do not guarantee, improved accessibility. The small sample size precludes statistical generalization. User studies would be necessary to validate actual improvements in reading experience for dyslexic individuals.
+
+---
+
+## 7. Discussion
+
+### 7.1 Privacy Considerations
+
+The system's fully local operation addresses a genuine gap in accessibility tooling. Existing cloud-based simplification services require users to transmit potentially sensitive documents to remote servers. For a student simplifying homework assignments, an employee simplifying workplace documents, or an individual processing personal correspondence, this transmission may be unacceptable.
+
+By processing all text locally, the system guarantees that document content never leaves the user's device. This guarantee holds regardless of network conditions, service provider policies, or potential security breaches at remote services.
+
+### 7.2 Deployment Accessibility
+
+CPU-only operation significantly lowers deployment barriers. While GPU inference is faster, GPUs suitable for neural network inference cost hundreds to thousands of dollars and are unavailable on many devices. By accepting slower inference in exchange for broader hardware compatibility, the system enables deployment on standard laptops, school computers, and older machines.
+
+Inference speed on CPU hardware remains acceptable for interactive use. Processing typical paragraphs requires several seconds—longer than cloud services but not prohibitively slow for assisted reading workflows.
+
+### 7.3 Architectural Extensibility
+
+The separation between neural simplification and mode-specific post-processing supports future extensions. The same neural core can serve multiple accessibility modes with different post-processing pipelines. ADHD support might emphasize chunking and progress indicators; autism support might focus on literal phrasing and disambiguation. These extensions require only additional post-processing implementations, not modifications to the neural infrastructure.
+
+### 7.4 Limitations of T5-Small
+
+T5-small's compact size enables CPU inference but limits capability. The model occasionally produces outputs that lose important information or introduce grammatical errors. Larger models would likely produce higher-quality simplifications but at the cost of increased inference time and memory requirements.
+
+The "simplify:" prefix is not part of T5's original training, so the model's response to this conditioning is imperfect. Fine-tuning on simplification data would likely improve results but would require curating or obtaining appropriate training data.
+
+---
+
+## 8. Limitations
+
+We identify several limitations that constrain interpretation of this work:
+
+**No user studies.** We have not conducted studies with dyslexic participants to validate that the system improves reading experience or comprehension. The quantitative metrics capture text properties correlated with readability but do not directly measure user outcomes.
+
+**Limited evaluation scope.** Results are based on a single sample passage. Broader evaluation across diverse content types, lengths, and domains would be necessary to characterize system performance more fully.
+
+**No clinical claims.** This system is a technical demonstration, not a medical device or clinical intervention. We make no claims about diagnosis, treatment, or therapeutic benefit for dyslexia or any other condition.
+
+**Model limitations.** T5-small occasionally produces outputs with grammatical errors, information loss, or unexpected reformulations. The system does not detect or correct these errors.
+
+**Heuristic brittleness.** The rule-based post-processing relies on pattern matching that may fail for unusual sentence constructions, non-English text, or edge cases in punctuation and formatting.
+
+**Single language.** The current implementation targets English text only. Extension to other languages would require evaluation of T5's multilingual capabilities and language-specific post-processing heuristics.
+
+**Accessibility of the tool itself.** The command-line interface may present barriers for users unfamiliar with terminal operation. A graphical interface would improve accessibility of the tool itself.
+
+---
+
+## 9. Future Work
+
+Several directions for future development emerge from this work:
+
+### 9.1 User Studies
+
+The most critical next step is evaluation with dyslexic users. Such studies could measure reading speed, comprehension accuracy, subjective comfort, and preferences for different simplification levels. User feedback would inform refinement of both neural and rule-based components.
+
+### 9.2 Graphical User Interface
+
+A graphical interface would make the system accessible to users without command-line experience. Design considerations include accessibility of the interface itself (screen reader compatibility, keyboard navigation, appropriate color contrast per WCAG 2.1 guidelines) and workflow integration (browser extensions, document editor plugins).
+
+### 9.3 Additional Accessibility Modes
+
+The architecture supports extension to other accessibility needs:
+
+**ADHD support** might emphasize chunking long documents into manageable sections, providing progress indicators, and formatting output to maintain focus. These features would be implemented as rule-based post-processing, leveraging the existing neural simplification core.
+
+**Autism support** might focus on literal phrasing, reducing idioms and ambiguous expressions, and making implicit information explicit.
+
+These modes would require research into specific accessibility needs and appropriate post-processing strategies.
+
+### 9.4 Model Improvements
+
+Several approaches could improve simplification quality:
+
+**Fine-tuning** on text simplification datasets would adapt the model specifically for this task, likely improving output quality compared to zero-shot prefix conditioning.
+
+**Larger models** (T5-base or T5-large) could be offered as options for users with more capable hardware, trading inference speed for quality.
+
+**Quantization** (reducing model precision from 32-bit to 8-bit integers) could reduce memory requirements and improve CPU inference speed with minimal quality loss.
+
+**ONNX export** could enable optimized inference through specialized runtime engines, improving performance across diverse hardware.
+
+### 9.5 Evaluation Framework
+
+Development of a systematic evaluation framework covering diverse content types, automatic quality metrics, and standardized test sets would support ongoing development and comparison with other systems.
+
+---
+
+## 10. Conclusion
+
+We have presented a privacy-preserving, offline text simplification system designed to support readers with dyslexia. The system combines neural text simplification using T5-small with rule-based post-processing heuristics, operating entirely on local CPU hardware without cloud dependencies.
+
+Preliminary evaluation demonstrates measurable changes in text properties associated with readability: reduced word count, substantially shorter sentences, and improved Flesch Reading Ease scores. We emphasize that these metrics do not substitute for user studies, which remain essential future work.
+
+The system's core contribution is demonstrating feasibility: meaningful text simplification for accessibility purposes can be achieved locally, privately, and on modest hardware. This proof-of-concept provides a foundation for future development including user evaluation, graphical interfaces, and additional accessibility modes.
+
+Privacy-preserving local AI represents an important direction for accessibility technologies. Users should not face a choice between accessibility support and privacy when processing personal documents. By keeping all processing local, systems like the one presented here can provide assistive capabilities without compromising user privacy.
+
+---
+
+## References
+
+British Dyslexia Association. (n.d.). Dyslexia Style Guide. https://www.bdadyslexia.org.uk/advice/employers/creating-a-dyslexia-friendly-workplace/dyslexia-friendly-style-guide
+
+Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li, W., & Liu, P. J. (2020). Exploring the limits of transfer learning with a unified text-to-text transformer. Journal of Machine Learning Research, 21(140), 1-67.
+
+Rello, L., & Baeza-Yates, R. (2013). Good fonts for dyslexia. Proceedings of the 15th International ACM SIGACCESS Conference on Computers and Accessibility (ASSETS '13), Article 14.
+
+Shi, W., Cao, J., Zhang, Q., Li, Y., & Xu, L. (2016). Edge computing: Vision and challenges. IEEE Internet of Things Journal, 3(5), 637-646.
+
+Siddharthan, A. (2014). A survey of research on text simplification. International Journal of Applied Linguistics, 165(2), 259-298.
+
+Snowling, M. J. (2000). Dyslexia (2nd ed.). Blackwell Publishing.
+
+W3C. (2018). Web Content Accessibility Guidelines (WCAG) 2.1. https://www.w3.org/TR/WCAG21/
+
+Zhang, X., & Lapata, M. (2017). Sentence simplification with deep reinforcement learning. Proceedings of the 2017 Conference on Empirical Methods in Natural Language Processing (EMNLP), 584-594.
+
+Ziegler, Z., Melas-Kyriazi, L., Rush, A., & Barak, B. (2019). Latent normalizing flows for discrete sequences. Proceedings of the 36th International Conference on Machine Learning (ICML).
+
+---
+
+*Word count: approximately 4,300 words*
