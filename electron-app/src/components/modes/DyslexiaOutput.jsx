@@ -23,7 +23,7 @@ export default function DyslexiaOutput() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-surface)] relative p-6 overflow-y-auto space-y-4">
+    <div className="flex flex-col bg-[var(--color-surface)] relative p-6 space-y-4">
       <div className="flex justify-between items-center bg-[var(--color-bg)] p-3 rounded-lg border border-[var(--color-border)] mb-4 sticky top-0 z-10">
         <span className="font-semibold text-sm flex items-center gap-2">
           <Focus size={16} className="text-[var(--color-primary)]" />
@@ -32,7 +32,7 @@ export default function DyslexiaOutput() {
         <button
           onClick={handleListen}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            isPlaying ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-[var(--color-primary)] text-white hover:opacity-90'
+            isPlaying ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:opacity-90'
           }`}
         >
           <Volume2 size={16} />

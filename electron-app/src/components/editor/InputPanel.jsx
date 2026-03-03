@@ -10,7 +10,7 @@ export default function InputPanel() {
   const textClass = mode === 'dyslexia' ? 'dyslexia-text' : '';
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-bg)] border-r border-[var(--color-border)] relative">
+    <div className="flex flex-col min-h-0 h-full overflow-hidden bg-[var(--color-bg)] border-r border-[var(--color-border)] relative">
       <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
         <h2 className="font-semibold text-[var(--color-text)] flex items-center gap-2">
           <Type size={18} />

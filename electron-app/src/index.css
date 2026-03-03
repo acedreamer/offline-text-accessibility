@@ -8,6 +8,7 @@
   --color-muted: #64748b;
   --color-border: #e2e8f0;
   --color-badge-good: #16a34a;
+  --color-on-primary: #ffffff;
   --font-size-body: 16px;
 }
 
@@ -25,13 +26,21 @@ html.high-contrast {
   --color-text: #ffffff;
   --color-border: #ffffff;
   --color-badge-good: #ffff00;
+  --color-on-primary: #000000;
   font-weight: 700;
 }
 
 .dyslexia-text {
   line-height: 1.8;
-  letter-spacing: 0.07em;
-  word-spacing: 0.15em;
+  letter-spacing: 0.12em;
+  word-spacing: 0.16em;
+  max-width: 65ch;
+  hyphens: none;
+  -webkit-hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-style: normal;
+  text-decoration: none;
 }
 
 .active-sentence {

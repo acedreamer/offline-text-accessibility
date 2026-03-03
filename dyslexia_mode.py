@@ -94,8 +94,9 @@ def format_for_dyslexia(text: str, split_sentences_func) -> str:
             cleaned = _capitalize_first(part)
             cleaned = _ensure_sentence_end(cleaned)
 
-            # Apply hyphenation
-            cleaned = _hyphenate_text(cleaned)
+            # Hyphenation intentionally disabled — BDA guidelines say it disrupts
+            # word-shape recognition which dyslexic readers rely on.
+            # cleaned = _hyphenate_text(cleaned)
 
             output_lines.append(cleaned)
 
