@@ -1,0 +1,221 @@
+# Fine-Tuning Recommendations for SimplifyAI T5 Model
+# Target: Improved text simplification for neurodivergent accessibility
+# Project: SimplifyAI - Electron app with Dyslexia/ADHD/Autism modes
+
+## 🎯 Current Setup Analysis
+- Model: Local T5 (in `t5-simplifier/` directory)
+- Pipeline: Neural simplification → Mode-specific post-processing
+- Dataset history: Using GEM/wiki_auto_asset_turk (good baseline)
+- Checkpoints: Existing training capability (checkpoint-2500/5000)
+
+## 🔧 Fine-Tuning Recommendations
+
+### 1. Dataset Strategy (Highest Impact)
+Your current wiki_auto dataset is generic. For **accessibility-focused simplification**, augment with:
+
+**Recommended datasets to combine:**
+- WikiAuto (current base)
+- Newsela (manual simplifications, grades 2-12)
+- Asset (human-rated for simplicity)
+- TurkCorpus (paraphrase-focused simplifications)
+- PWKP (aligned with simplicity metrics)
+
+**Create a custom dataset with accessibility weighting:**
+Prioritize samples with:
+- Shorter sentences (benefits ADHD/dyslexia)
+- Higher word frequency (Kucera-Francis norms)
+- Fewer complex syntactic structures
+- More concrete words (lower AoA - Age of Acquisition)
+
+### 2. Parameter-Efficient Fine-Tuning (Practical for Consumer Hardware)
+Instead of full fine-tuning (memory-intensive), use LoRA:
+
+```python
+from peft import LoraConfig, get_peft_model
+
+lora_config = LoraConfig(
+    r=8,                    # Start with low rank
+    lora_alpha=32,
+    target_modules=["q", "v"],  # T5 attention modules
+    lora_dropout=0.1,
+    bias="none",
+    task_type="SEQ_2_SEQ_LM"
+)
+
+model = get_peft_model(base_model, lora_config)
+# Saves ~70% memory vs full fine-tuning
+```
+
+### 3. Training Configuration (Optimized for Simplification)
+```bash
+python run_seq2seq.py \
+  --model_name_or_path ./t5-simplifier \
+  --train_file ./data/accessibility_simplification_train.jsonl \
+  --validation_file ./data/accessibility_simplification_val.jsonl \
+  --output_dir ./t5-simplifier-finetuned \
+  --per_device_train_batch_size 4 \
+  --per_device_eval_batch_size 4 \
+  --gradient_accumulation_steps 4 \
+  --learning_rate 5e-5 \
+  --num_train_epochs 3 \
+  --warmup_steps 500 \
+  --fp16 \  # If GPU available
+  --logging_steps 50 \
+  --eval_steps 500 \
+  --save_steps 1000 \
+  --predict_with_generate \
+  --max_source_length 512 \
+  --max_target_length 128 \
+  --length_penalty 0.8 \  # Encourage conciseness (critical)
+  --early_stopping
+```
+
+### 4. Accessibility-Specific Loss Function
+Modify training to prioritize accessibility features:
+
+```python
+def accessibility_loss(logits, labels, input_text):
+    base_loss = cross_entropy(logits, labels)
+
+    # Accessibility bonuses (on decoded text)
+    decoded = tokenizer.batch_decode(logits.argmax(-1), skip_special_tokens=True)
+
+    bonus = 0.0
+    for text in decoded:
+        # Shorter sentences = better for ADHD/dyslexia
+        avg_sent_len = len(text.split()) / max(text.count('.') + text.count('!') + text.count('?'), 1)
+        if avg_sent_len < 15:  # Target: <15 words/sentence
+            bonus += 0.1
+
+        # Word frequency bonus (SUBTLEX frequencies)
+        words = text.lower().split()
+        freq_score = sum(word_freq.get(w, 0) for w in words) / len(words)
+        if freq_score > threshold:
+            bonus += 0.05
+
+        # Concrete word bonus (lower AoA = easier processing)
+        concreteness = sum(concreteness_scores.get(w, 0) for w in words) / len(words)
+        if concreteness > threshold:
+            bonus += 0.05
+
+    return base_loss - (bonus * accessibility_weight)  # Minimize loss
+```
+
+### 5. Evaluation Metrics Beyond ROUGE
+Track these accessibility-relevant metrics during validation:
+
+| Metric | Why It Matters | Target Range |
+|--------|----------------|--------------|
+| **SARI** | Standard simplification metric | > 40 (good) |
+| **FKGL** (Flesch-Kincaid Grade) | Reading level | 3.0-6.0 (ideal) |
+| **ASL** (Avg Sentence Length) | Critical for ADHD/dyslexia | < 15 words |
+| **% Concrete Words** | Easier processing | > 40% |
+| **Dependency Depth** | Syntactic complexity | < 4.0 |
+| **Lexical Diversity** (Type-Token Ratio) | Vocabulary simplicity | > 0.4 |
+
+### 6. Integration with Your Mode System
+**Key insight**: Keep fine-tuning focused on **core simplification quality**, then let your existing mode-specific post-processing handle accessibility adaptations.
+
+```
+[Input Text]
+    ↓
+[Fine-Tuned T5 Model] → "Core Simplification"
+    ↓
+[Dyslexia Mode] → Sentence splitting + hyphenation controls
+    ↓
+[ADHD Mode] → [1/N] markers + bolding + chunking
+    ↓
+[Autism Mode] → Literal phrasing + concrete terms
+    ↓
+[Output]
+```
+
+Benefits:
+- Better foundation simplification
+- Preserves your mode-specific logic
+- Easier experimentation (tweak core model without breaking modes)
+
+### 7. Practical Steps for Your Environment
+
+**Step 1: Prepare Accessibility-Oriented Dataset**
+```python
+# Example: Create weighted dataset
+import jsonlines
+from datasets import load_dataset
+
+# Load base datasets
+wikiauto = load_dataset("GEM/wiki_auto", split="train")
+newsela = load_dataset("json", data_files={"train": "newsela/manual/*.jsonl"})
+
+# Filter and weight for accessibility
+def accessibility_score(example):
+    src, tgt = example['src'], example['tgt']
+    score = 0.0
+
+    # Prefer shorter target sentences
+    if len(tgt.split()) < 20:
+        score += 1.0
+
+    # Prefer higher frequency words
+    freq_score = sum(wordfreq.word_frequency(w, 'en') for w in tgt.split()) / len(tgt.split())
+    score += freq_score * 2.0
+
+    # Prefer concrete words (using concreteness norms)
+    concrete_score = sum(concrete_norm.get(w, 0) for w in tgt.split()) / len(tgt.split())
+    score += concrete_score
+
+    return score
+
+# Weight samples by accessibility score
+weighted_data = []
+for example in wikiauto:
+    weight = accessibility_score(example)
+    for _ in range(int(weight * 10)):  # Scale as needed
+        weighted_data.append(example)
+```
+
+**Step 2: Safe Fine-Tuning Procedure**
+```bash
+# 1. Backup current model
+cp -r ./t5-simplifier ./t5-simplifier-backup
+
+# 2. Install LoRA if needed
+pip install peft
+
+# 3. Train with evaluation
+python train_simplifier.py --use_lora --eval_during_training
+
+# 4. If successful, merge and test:
+python merge_lora.py --model ./t5-simplifier-lora --output ./t5-simplifier-improved
+
+# 5. Validate with accessibility metrics before deploying
+```
+
+### 8. Critical Safety Checks for Accessibility
+Before deploying any fine-tuned model:
+- **Adversarial tests**: Try sentences with idioms, metaphors, complex syntax
+- **Mode compatibility**: Ensure output works with dyslexia/ADHD/autism post-processors
+- **Cognitive load measurement**: Use LEX tool or compute features manually
+- **User testing**: Even 5 neurodivergent users can catch critical issues
+
+## 📊 Expected Improvements
+With these changes, you should see:
+- 10-15% improvement in SARI/FKGL on accessibility test sets
+- Better preservation of key information while reducing complexity
+- More consistent sentence lengths (reducing outliers >25 words)
+- Outputs requiring less post-processing tweaking in mode-specific code
+
+## ⚠️ Important Caveats
+1. **Don't over-optimize for standard metrics**: Lower SARI might be better if more accessible
+2. **Monitor for over-simplification**: Don't lose critical information (medical/legal terms)
+3. **Consider distillation**: If model gets large, distill to smaller version for deployment
+
+## 🚀 Next Steps for Your Project
+1. Start with **LoRA fine-tuning** on WikiAuto+Newsela subset (10k samples)
+2. Evaluate using accessibility metrics (not just ROUGE)
+3. Test end-to-end with all three modes
+4. Only increase complexity if you see measurable accessibility gains
+
+---
+*File created: $(date)*
+*For SimplifyAI project - F:\chat editor ( mini project )\*

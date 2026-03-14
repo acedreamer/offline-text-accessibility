@@ -1,0 +1,32 @@
+Paper (Year) Methodology / Technique Inference / Key Findings Limitations / Research Gap Focus Area Technology Level
+Bork et al. (2025)
+Model-driven engineering approach with accessibility embedded during software design
+The authors emphasize integrating accessibility early in the development lifecycle to improve long-term usability
+The work is largely conceptual and does not present an AI-based real-time text editing system
+Software Development Lifecycle Conceptual
+Sharma et al. (2024) Security and privacy analysis of cloud-based assistive AI systems
+The study highlights potential privacy risks when sensitive user text is processed on external servers
+The paper does not propose a concrete local or offline AI alternative
+Cloud Security & Privacy Analysis
+Koushik et al. (2024) Review and evaluation of assistive writing tools for neurodivergent users
+Assistive writing technologies can improve writing confidence and usability for users with cognitive differences
+Most systems are static and lack adaptive or real-time AI support
+Assistive Technology Review Evaluation
+Ferres et al. (2023) Design and evaluation of WCAG-compliant adaptive user interfaces
+High-contrast and scalable interface designs improve usability for low-vision users
+The work does not integrate AI-based content transformation User Interface Design (WCAG) Design
+Chen et al. (2023) Cognitive load analysis applied to user interface design
+Reducing visual clutter and improving layout predictability can lower cognitive load
+The study does not focus on AI-assisted text editing applications
+Cognitive Science & HCI Analysis
+Alonzo et al. (2023) Human-computer interaction study of accessibility-aware text editors
+Accessibility-focused editor designs improve task completion and user experience
+Semantic text simplification using AI is not addressed Human-Computer Interaction Empirical Study
+Vacher et al. (2023) AI-based pipeline for real-time text transformation
+The authors report improved readability for dyslexic users through real-time text adaptation
+The system relies on cloud-based processing and does not consider privacy-first local execution
+Real-time AI Text Adaptation System Prototype
+Saggion et al. (2022) Survey of rule-based and neural text simplification techniques
+Neural approaches are effective in reducing lexical and syntactic complexity
+Real-time editor integration and user-controlled simplification are not extensively discussed
+Text Simplification Techniques Survey

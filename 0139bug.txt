@@ -1,0 +1,165 @@
+BUG REPORT FOR SIMPLIFYAI APPLICATION
+=====================================
+
+FRONTEND ISSUES (React/Electron Renderer)
+-----------------------------------------
+
+1. AppContext.jsx (State Management)
+   - Line 53: handleSimplify function lacks proper error handling for Python process failures
+   - Lines 63-66: Error handling sets outputText but doesn't clear previous valid output
+   - No timeout mechanism for simplification requests that might hang
+
+2. MetricsBar.jsx (Metrics Display)
+   - Line 21: Potential division by zero if beforeVal is 0
+   - Lines 31-35: Badge color logic may be confusing - "isGood" calculation needs review
+     * For readability (FLESCH), higher is better, so inverse=True is correct
+     * For word count and sentence length, lower is better (more concise), so inverse=False
+   - No fallback formatting for very large numbers
+
+3. DyslexiaOutput.jsx (Text-to-Speech)
+   - Lines 15-21: Paragraph offset calculation hardcoded to '\n\n' separator
+   - Line 31: Creates new SpeechSynthesisUtterance without checking if one is already active
+   - Line 63: scrollIntoView may fail if ref is null (race condition)
+   - No visual indication of speech progress beyond paragraph highlighting
+
+4. ADHDFocusMode.jsx (Keyboard Navigation)
+   - Lines 34-41: handleKeyDown doesn't check if component is mounted
+   - Lines 34-40: Arrow key handling doesn't prevent default for scroll in all cases
+   - No visual focus indicator for keyboard users beyond background change
+   - Sentence click handler could cause too many re-renders
+
+5. SettingsPanel.jsx (Accessibility)
+   - Lines 131-139: Font size slider lacks proper aria-label for screen readers
+   - Lines 172-180: Reduce motion checkbox has overly complex aria attributes
+   - No reset to defaults button
+   - Settings panel can be opened multiple times (stacking issue)
+
+6. InputPanel.jsx (Text Input)
+   - Line 10: Dyslexia class application only considers mode, not user preference
+   - No input validation or character limit warning
+   - No indication when input is too large for effective processing
+
+BACKEND ISSUES (Electron Main Process)
+--------------------------------------
+
+7. main.js (IPC Communication)
+   - Lines 30-34: stdout data listener registered but never used (dead code)
+   - Lines 36-38: stderr only logged to console, not communicated to user
+   - Line 75: IPC handler creates new promise per request but no concurrent request handling
+   - Lines 82-97: handleResponse function assumes complete JSON per stdout chunk
+   - No timeout for Python process responses
+   - No process health checks or restart mechanism
+
+8. preload.js (Security)
+   - Only exposes simplify function - should consider exposing more functions if needed
+   - No validation of inputs passed to electronAPI
+
+PYTHON BACKEND ISSUES
+---------------------
+
+9. simplify_server.py (Main Server)
+   - Line 14: Import from 'simplify' module - need to verify this exists
+   - Lines 21-34: Format functions import mode modules on every call (inefficient)
+   - Line 54: Model preloading ignores errors silently - should fallback or notify
+   - Line 60: Reads from stdin line-by-line but JSON could span multiple lines
+   - No rate limiting or request queuing
+   - No logging of requests/responses for debugging
+   - Model loading happens lazily on first request after ignoring preload errors
+
+10. dyslexia_mode.py (Dyslexia Processing)
+    - Line 59: Comment says hyphenation intentionally disabled but code remains
+    - _hyphenate_word function has commented-out code that could be confusing
+    - Conjunction splitting logic may not handle all edge cases
+    - No option to configure hyphenation preference despite BDA guidelines comment
+
+11. adhd_mode.py (ADHD Processing)
+    - Lines 6-20: _bold_first_noun uses simplistic heuristic that may miss important terms
+    - Skip words list is limited and may not cover all languages
+    - No option to disable bolding for users who find it distracting
+    - Progress markers [1/N] added but not used in frontend sentence splitting
+
+12. autism_mode.py (Not reviewed but should be checked)
+    - Needs similar review for processing logic
+
+SECURITY CONSIDERATIONS
+-----------------------
+
+13. Electron Security
+    - contextIsolation: true and nodeIntegration: false are correctly set
+    - preload.js uses contextBridge properly
+    - No webSecurity disabling found
+    - However, should consider adding Content Security Policy (CSP)
+
+14. Data Handling
+    - No sanitization of user input before sending to Python backend
+    - No validation of metadata returned from Python backend
+    - Potential for XSS if outputText contains HTML (though React escapes by default)
+
+PERFORMANCE ISSUES
+------------------
+
+15. Bundle Size
+    - Uses lucide-react icons (good)
+    - Tailwind CSS configured but may be including unused CSS
+    - No code splitting or lazy loading of mode components
+
+16. Rendering Performance
+    - DyslexiaOutput creates paragraph refs array on every render
+    - ADHDFocusMode may cause excessive re-renders during rapid navigation
+    - No useCallback/useMemo optimizations in several components
+
+17. Backend Performance
+    - Model loading happens per session but could be shared
+    - No caching of recent simplifications
+    - Text processing happens on main thread (could block UI in Electron)
+
+USABILITY ISSUES
+----------------
+
+18. Accessibility Gaps
+    - No skip-to-content link
+    - Some interactive elements lack accessible names
+    - Color contrast should be verified for all themes
+    - No mention of screen reader testing
+
+19. User Feedback
+    - Loading state only shows spinner, no progress indication
+    - No way to cancel long-running simplification
+    - No history of previous simplifications
+    - No export options beyond copy/print
+
+20. Error States
+    - No retry button for failed requests
+    - Error messages are technical rather than user-friendly
+    - No offline fallback or caching
+
+RECOMMENDATIONS
+===============
+
+HIGH PRIORITY
+-------------
+1. Fix IPC communication to handle multi-line JSON and add timeouts
+2. Implement proper error boundaries and user-friendly error messages
+3. Add loading skeletons and better progress indication
+4. Fix potential division by zero in MetricsBar
+5. Ensure all interactive elements are properly accessible
+
+MEDIUM PRIORITY
+---------------
+6. Optimize backend imports to avoid repeated module loading
+7. Add input validation and character limits
+8. Implement request queuing to prevent overwhelming the Python process
+9. Add keyboard navigation improvements and focus management
+10. Create utility functions for shared text processing logic
+
+LOW PRIORITY
+------------
+11. Add usage analytics (opt-in) to understand which modes are used most
+12. Implement history feature for recent simplifications
+13. Add configuration options for processing preferences
+14. Consider code splitting for faster initial load
+15. Add automated tests for critical paths
+
+NOTE: The actual simplify_server.py and mode files were reviewed based on available code.
+Some issues may require checking the referenced 'simplify' module and 'utils.py' files
+which were not visible in the file listing.

@@ -79,6 +79,108 @@ body {
   font-size: var(--font-size-body);
 }
 
+/* Animation utility classes */
+.fade-in {
+  animation: fadeIn var(--animation-duration-normal) var(--animation-easing) forwards;
+}
+
+.fade-out {
+  animation: fadeOut var(--animation-duration-normal) var(--animation-easing) forwards;
+}
+
+.slide-in-up {
+  animation: slideInUp var(--animation-duration-normal) var(--animation-easing) forwards;
+}
+
+.slide-in-down {
+  animation: slideInDown var(--animation-duration-normal) var(--animation-easing) forwards;
+}
+
+.pulse-subtle {
+  animation: pulseSubtle var(--animation-duration-normal) ease-in-out infinite;
+}
+
+.spin-slow {
+  animation: spinSlow var(--animation-duration-slow) linear infinite;
+}
+
+/* Keyframes for utility animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes spinSlow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Disable or reduce animations when reduce motion is enabled */
+.reduce-motion .fade-in,
+.reduce-motion .fade-out,
+.reduce-motion .slide-in-up,
+.reduce-motion .slide-in-down,
+.reduce-motion .pulse-subtle,
+.reduce-motion .spin-slow,
+.reduce-motion .animate-spin,
+.reduce-motion .animate-pulse,
+.reduce-motion .animate-ping {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Optional: Provide even more reduced alternatives */
+.reduce-motion {
+  --animation-duration-slow: 0s;
+  --animation-duration-normal: 0s;
+  --animation-duration-fast: 0s;
+}
+
 /* Font Families */
 body.lexend-font { font-family: 'Lexend', sans-serif; }
 body.opendyslexic-font { font-family: 'OpenDyslexic', sans-serif; }

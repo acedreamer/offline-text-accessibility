@@ -12,7 +12,7 @@ export default function MetricsBar() {
       return (
         <div className="flex flex-col">
           <span className="text-[10px] font-bold text-[var(--color-muted)] tracking-wider">{label}</span>
-          <span className="text-sm font-mono font-medium text-[var(--color-text)]">0 → 0 (0%)</span>
+          <span className="text-sm font-mono font-medium text-[var(--color-muted)]">— — —</span>
         </div>
       );
     }

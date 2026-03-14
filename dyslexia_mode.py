@@ -4,13 +4,13 @@ import re
 def _split_on_conjunctions(sentence: str) -> list[str]:
     """Split sentence on conjunctions and relative clauses."""
     # Split on common conjunctions and clause markers
-    parts = re.split(r'\s*,?\s*\b(and|but|which|that|because|although|however|often|also)\b\s*', sentence, flags=re.IGNORECASE)
+    parts = re.split(r'\s*,?\s*\b(and|but|or|nor|for|so|yet|which|that|because|although|though|since|unless|until|when|while|where|how|however|moreover|furthermore|nevertheless|nonetheless|consequently|therefore|thus|hence|often|also)\b\s*', sentence, flags=re.IGNORECASE)
 
     result = []
     i = 0
     while i < len(parts):
         part = parts[i].strip()
-        if part and part.lower() not in ('and', 'but', 'which', 'that', 'because', 'although', 'however', 'often', 'also'):
+        if part and part.lower() not in ('and', 'but', 'or', 'nor', 'for', 'so', 'yet', 'which', 'that', 'because', 'although', 'though', 'since', 'unless', 'until', 'when', 'while', 'where', 'how', 'however', 'moreover', 'furthermore', 'nevertheless', 'nonetheless', 'consequently', 'therefore', 'thus', 'hence', 'often', 'also'):
             result.append(part)
         elif part.lower() in ('often', 'also') and i + 1 < len(parts):
             # Keep these as sentence starters
@@ -74,12 +74,12 @@ def _hyphenate_text(text: str) -> str:
         processed.append(word)
     return " ".join(processed)
 
-def format_for_dyslexia(text: str, split_sentences_func) -> str:
+def format_for_dyslexia(text: str, split_sentences_func, use_hyphenation: bool = False) -> str:
     """Format text for dyslexia accessibility.
 
     1. Breaks text into short, single-idea sentences.
     2. One sentence per line.
-    3. Adds hyphens to long words (NEW).
+    3. Optionally adds hyphens to long words based on user preference.
     """
     sentences = split_sentences_func(text)
     output_lines = []
@@ -94,9 +94,12 @@ def format_for_dyslexia(text: str, split_sentences_func) -> str:
             cleaned = _capitalize_first(part)
             cleaned = _ensure_sentence_end(cleaned)
 
-            # Hyphenation intentionally disabled — BDA guidelines say it disrupts
-            # word-shape recognition which dyslexic readers rely on.
-            # cleaned = _hyphenate_text(cleaned)
+            # Apply hyphenation based on user preference
+            # Note: Hyphenation is disabled by default as per BDA guidelines
+            # which state that hyphenation disrupts word-shape recognition
+            # that dyslexic readers rely on.
+            if use_hyphenation:
+                cleaned = _hyphenate_text(cleaned)
 
             output_lines.append(cleaned)
 

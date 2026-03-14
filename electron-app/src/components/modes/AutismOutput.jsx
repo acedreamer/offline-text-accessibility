@@ -30,7 +30,7 @@ export default function AutismOutput() {
 
       <div className="flex-1 space-y-8 max-w-2xl mx-auto w-full">
         {paragraphs.map((para, idx) => (
-          <div key={idx} className="flex gap-4">
+          <div key={idx} className="flex gap-4 fade-in">
             <div className="text-[var(--color-muted)] mt-1">
               <LayoutList size={20} />
             </div>

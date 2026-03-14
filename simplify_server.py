@@ -18,10 +18,10 @@ from utils import compute_metrics
 # when run from a different working directory
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "t5-simplifier")
 
-def format_for_dyslexia(simplified_text: str, split_func) -> str:
+def format_for_dyslexia(simplified_text: str, split_func, use_hyphenation: bool = False) -> str:
     """Imported logic for dyslexia formatting"""
     from dyslexia_mode import format_for_dyslexia
-    return format_for_dyslexia(simplified_text, split_func)
+    return format_for_dyslexia(simplified_text, split_func, use_hyphenation)
 
 def format_for_adhd(simplified_text: str) -> str:
     """Imported logic for ADHD formatting"""
@@ -33,14 +33,14 @@ def format_for_autism(simplified_text: str) -> str:
     from autism_mode import format_for_autism
     return format_for_autism(simplified_text)
 
-def process_text(text: str, mode: str, model_name: str = MODEL_DIR) -> str:
+def process_text(text: str, mode: str, model_name: str = MODEL_DIR, use_hyphenation: bool = False) -> str:
     """Process text according to the specified mode."""
     # 1. Neural Simplification
     simplified = simplify_with_t5(text, model_name)
 
     # 2. Mode-Specific Post-Processing
     if mode == "dyslexia":
-        return format_for_dyslexia(simplified, split_sentences)
+        return format_for_dyslexia(simplified, split_sentences, use_hyphenation)
     elif mode == "adhd":
         return format_for_adhd(simplified)
     elif mode == "autism":
@@ -65,9 +65,10 @@ def main():
         try:
             request = json.loads(line)
 
-            # Expected payload: { "text": "...", "mode": "dyslexia", "model": "./t5-simplifier" }
+            # Expected payload: { "text": "...", "mode": "dyslexia", "model": "./t5-simplifier", "useHyphenation": false }
             text = request.get("text", "")
             mode = request.get("mode", "dyslexia")
+            use_hyphenation = request.get("useHyphenation", False)
 
             # Translate the frontend's "./t5-simplifier" to the absolute path
             # Otherwise huggingface throws a validation error when running from a subfolder
@@ -80,7 +81,7 @@ def main():
                     "error": "No text provided"
                 }
             else:
-                simplified = process_text(text, mode, model_name)
+                simplified = process_text(text, mode, model_name, use_hyphenation)
                 metrics = compute_metrics(text, simplified)
 
                 # metrics is a nested dict: {'before': {'word_count':...}, 'after': {...}, 'change': {...}}

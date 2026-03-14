@@ -26,6 +26,7 @@ export function AppProvider({ children }) {
     lineSpacing: "standard",
     cogFocusMode: true,
     reduceMotion: false,
+    useHyphenation: false, // User preference for hyphenation in dyslexia mode
   });
 
   // Apply settings to body
@@ -58,20 +59,29 @@ export function AppProvider({ children }) {
       const result = await window.electronAPI.simplify({
         text: inputText,
         mode: mode,
-        // Remove model path from here so the backend uses its default logic
+        useHyphenation: settings.useHyphenation, // Pass hyphenation setting to backend
       });
+
+      if (result.error) {
+        setOutputText(`Error: ${result.error}`);
+        setIsLoading(false);
+        return;
+      }
 
       setOutputText(result.simplified);
       setMetrics(result.metrics);
 
-      // Simple regex to split sentences, similar to python's logic
-      const splitSentences = result.simplified.split(/(?<=[.!?])\s+/).filter(Boolean);
+      // ADHD mode is already split into lines with [1/N] markers by Python
+      const splitSentences = mode === 'adhd'
+        ? result.simplified.split('\n').filter(Boolean)
+        : result.simplified.split(/(?<=[.!?])\s+/).filter(Boolean);
+
       setSentences(splitSentences);
       setFocusSentenceIndex(0);
 
     } catch (error) {
       console.error("Simplification error:", error);
-      setOutputText(`Error processing text: ${error.message}`);
+      setOutputText(`Error: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

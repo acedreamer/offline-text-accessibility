@@ -5,11 +5,19 @@
   text-align: center;
 }
 
+/* CSS Variables for animation control */
+:root {
+  --animation-duration-slow: 3s;
+  --animation-duration-normal: 1.5s;
+  --animation-duration-fast: 0.75s;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
-  transition: filter 300ms;
+  transition: filter var(--animation-duration-normal) var(--animation-easing);
 }
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
@@ -18,18 +26,30 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-@keyframes logo-spin {
-  from {
+/* Enhanced logo spin animation - more subtle and purposeful */
+@keyframes logo-spin-accessible {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  50% {
+    transform: rotate(180deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
 }
 
+/* Respect both OS preference and app reduce motion setting */
 @media (prefers-reduced-motion: no-preference) {
+  body:not(.reduce-motion) a:nth-of-type(2) .logo {
+    animation: logo-spin-accessible var(--animation-duration-slow) linear infinite;
+  }
+}
+
+/* Fallback for older browsers or when JS is disabled */
+@media (prefers-reduced-motion: reduce) {
   a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+    animation: none;
   }
 }
 

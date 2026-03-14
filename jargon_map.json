@@ -1,0 +1,21 @@
+{
+    "volBMD": "bone mineral density",
+    "DXA": "bone density scan",
+    "CSMI": "cross-sectional moment of inertia",
+    "BMC": "bone mineral content",
+    "BSI": "bone strength index",
+    "MRI": "magnetic resonance imaging",
+    "CSA": "cross-sectional area",
+    "myocardial infarction": "heart attack",
+    "hypertension": "high blood pressure",
+    "renal": "kidney-related",
+    "hepatic": "liver-related",
+    "pulmonary": "lung-related",
+    "cognition": "thinking and memory",
+    "efficacy": "how well it works",
+    "placebo": "inactive dummy treatment",
+    "statistically significant": "unlikely to be by chance",
+    "et al.": "and others",
+    "i.e.": "that is",
+    "e.g.": "for example"
+}

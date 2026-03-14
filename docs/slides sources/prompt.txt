@@ -1,0 +1,97 @@
+Act as a professional academic slide-generation assistant for a Computer Science B.Tech mini project. Your task is to generate a strictly formal, 12-slide presentation based on the exact constraints and structure below.
+
+ABSOLUTE DESIGN & CONTENT CONSTRAINTS (YOU MUST FOLLOW THESE):
+1. NO INLINE CITATIONS: Do not include any inline citations (e.g., [1], [Author, 2024], etc.) anywhere in the slide body text. The only place papers should be listed is the Literature Review table and the References slide.
+2. CONSERVATIVE ACADEMIC TONE: Use abstract-level language only (e.g., "the authors propose...", "the study highlights..."). Do NOT mention experimental metrics, dataset sizes, or numerical performance improvements.
+3. NO HALLUCINATIONS: Do not invent new papers, authors, venues, or features. Stick only to the provided structure.
+
+LOCKED LITERATURE SET (Use only these 8 papers for Slide 5 and Slide 12):
+1. Bork et al., “Inclusive model-driven engineering for accessible software,” Springer, 2025.
+2. Sharma et al., “Privacy risks in cloud-based assistive AI systems,” IEEE Access, 2024.
+3. Koushik et al., “Assistive writing technologies for neurodivergent users,” Springer, 2024.
+4. Ferres et al., “WCAG-compliant adaptive interfaces for low-vision users,” Springer, 2023.
+5. Chen et al., “Cognitive load-aware user interface design,” IEEE Transactions on Human-Machine Systems, 2023.
+6. Alonzo et al., “Designing accessibility-aware text editing interfaces,” ACM TOCHI, 2023.
+7. Vacher et al., “AI-based real-time text transformation to support people with dyslexia,” ACM ASSETS, 2023.
+8. Saggion et al., “Automatic text simplification: A survey of methods, resources, and applications,” ACM Computing Surveys, 2022.
+
+GENERATE THE PRESENTATION USING THE EXACT STRUCTURE BELOW:
+
+---
+SLIDE 1: Title Slide
+Title: SimplyAI-A Disability-Aware, Privacy-First, Local AI Chat Editor
+Subtitle: Mini Project (CSD 334)
+Institution: 
+Group Members: 
+Project Guide: 
+
+---
+SLIDE 2: Introduction
+- Importance: Accessible digital writing tools are essential for inclusive education and modern employment.
+- Target Challenges: Standard text interfaces present significant reading barriers for users with dyslexia, low vision, and cognitive differences.
+- Role of AI: Artificial intelligence can dynamically adapt text readability and interface structure to suit individual cognitive needs.
+- Current Trend: A vital shift toward "Accessibility-First" engineering, prioritizing inclusive design at the core rather than as an afterthought.
+
+---
+SLIDE 3: Problem Statement
+- Cloud Dependence: Current assistive writing technologies rely heavily on external cloud processing, which introduces latency.
+- Privacy Concerns: Processing sensitive user text on external servers creates significant security and privacy vulnerabilities.
+- Limited Accessibility Support: Standard editors treat accessibility features as superficial overlays rather than integrating them natively.
+- The Gap: There is a critical need for an offline, privacy-secure text editor that provides real-time AI adaptations for neurodivergent users.
+
+---
+SLIDE 4: Objectives
+- Develop a desktop-based, offline chat editor tailored for users with dyslexia and visual impairments.
+- Implement a privacy-first architecture where sensitive text data never leaves the user's device.
+- Deploy localized AI inference to execute real-time text simplification without relying on external cloud APIs.
+- Integrate specialized accessibility reading modes, including dyslexia support and high-contrast visual aids.
+
+---
+SLIDE 5: Literature Review
+(Render this strictly as a Markdown table in reverse chronological order: 2025 -> 2022. Use the 8 locked papers provided above. Columns must be: Title & Year | Methodology / Technique | Inference / Key Findings | Limitations / Research Gap). Keep descriptions brief and abstract-level.
+
+---
+SLIDE 6: Research Gap & Motivation
+- Lack of Unified Tools: Absence of integrated, accessibility-first AI editors that treat inclusion as a core component.
+- Dependence on Cloud Processing: Prior work and existing tools rely heavily on cloud servers, compromising real-time performance.
+- Privacy Vulnerabilities: Limited focus on privacy-first, local execution for processing sensitive communication data.
+- The Motivation: To bridge the gap between advanced neural simplification and absolute user data sovereignty.
+
+---
+SLIDE 7: System Architecture
+- Desktop Shell: Packaged using Electron to support multithreaded performance and native OS integration.
+- Editor Engine: Utilizes the Lexical framework to support complex, highly accessible document structures.
+- Local AI Core: Driven by a localized neural inference engine (Transformers.js) for semantic simplification.
+- Accessibility Modules: Integrated layers for dyslexia formatting, low-vision contrast, and cognitive load reduction.
+
+---
+SLIDE 8: Accessibility Features & Academic Justification
+- Text Simplification: Neural reduction of lexical complexity to support reading comprehension for dyslexia.
+- Dyslexia-Friendly Formatting: Rule-based heuristics for compound sentence splitting and specialized typography adjustments.
+- Cognitive Focus Aids: Visual chunking and progress markers to reduce cognitive load and maintain focus.
+- Visual Contrast: WCAG AAA compliant visual scaling and dynamic contrast themes for low-vision users.
+
+---
+SLIDE 9: Implementation Details
+- Technology Stack: Built using a React frontend, Electron desktop shell, and Tailwind CSS.
+- Local AI Rationale: CPU-only local inference ensures the system runs smoothly on standard consumer hardware without API costs.
+- Privacy Architecture: The hybrid framework enforces strict offline execution, completely eliminating data transmission risks.
+
+---
+SLIDE 10: Results / Expected Outcomes
+(FORMATTING INSTRUCTION: Layout this slide in a two-column format. The left column should contain the text below. The right column MUST be a large, blank visual placeholder box labeled "[INSERT SCREENSHOT OF PC WINDOW HERE]" so the user can drop an 16:9 image of the application interface into it.)
+- Expected Improvements: Noticeable reductions in textual complexity and improved readability for target personas.
+- Privacy Benefits: Complete data sovereignty achieved through zero external server dependency.
+- User Experience: A unified, distraction-free environment that actively lowers the cognitive load for neurodivergent readers.
+- Zero-Cost Operation: Sustainable, free usage enabled by removing reliance on commercial cloud APIs.
+
+---
+SLIDE 11: Conclusion & Future Work
+- Problem Summary: Addressed the critical conflict between utilizing advanced AI accessibility tools and protecting sensitive user data privacy.
+- Solution Contribution: Transformed a theoretical privacy-by-design concept into a functional engineering prototype.
+- Key Learning: Demonstrated that commercial-grade accessibility tools can run entirely offline on standard hardware.
+- Future Enhancements: Potential expansion to include formal user studies and optimization for multilingual simplification models.
+
+---
+SLIDE 12: References
+(List ONLY the 8 locked papers provided at the top of this prompt. Format in strict standard IEEE style. Order them in reverse chronological order, 2025 to 2022.)

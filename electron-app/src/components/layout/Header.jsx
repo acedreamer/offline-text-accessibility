@@ -8,7 +8,7 @@ export default function Header() {
     <header className="flex items-center justify-between p-4 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <div className="bg-[var(--color-primary)] text-white p-2 rounded-lg">
+          <div className="bg-[var(--color-primary)] text-[var(--color-on-primary)] p-2 rounded-lg">
             <SpellCheck2 size={24} />
           </div>
           <span className="font-bold text-lg tracking-tight">SimplifyAI</span>
@@ -36,10 +36,10 @@ export default function Header() {
         <button
           onClick={handleSimplify}
           disabled={isLoading}
-          className="flex items-center gap-2 bg-[var(--color-primary)] text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="flex items-center gap-2 bg-[var(--color-primary)] text-[var(--color-on-primary)] px-4 py-2 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {isLoading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-[var(--color-on-primary)]/30 border-t-[var(--color-on-primary)] rounded-full animate-spin" />
           ) : (
             <Sparkles size={18} />
           )}

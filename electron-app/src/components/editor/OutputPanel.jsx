@@ -62,11 +62,13 @@ export default function OutputPanel() {
             <p>Click "Simplify Text" to see results here.</p>
           </div>
         ) : (
-          <>
-            {mode === 'dyslexia' && <DyslexiaOutput />}
-            {mode === 'adhd' && <ADHDFocusMode />}
-            {mode === 'autism' && <AutismOutput />}
-          </>
+          <div className="fade-in">
+            <>
+              {mode === 'dyslexia' && <DyslexiaOutput />}
+              {mode === 'adhd' && <ADHDFocusMode />}
+              {mode === 'autism' && <AutismOutput />}
+            </>
+          </div>
         )}
       </div>
 

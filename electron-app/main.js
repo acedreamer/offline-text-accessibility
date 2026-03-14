@@ -79,20 +79,48 @@ ipcMain.handle('simplify', async (event, payload) => {
       return;
     }
 
-    // Function to handle the exact response we're waiting for
-    const handleResponse = (data) => {
-      try {
-        const result = JSON.parse(data.toString());
-        pythonProcess.stdout.off('data', handleResponse);
+    // Buffer to accumulate stdout data
+    let buffer = '';
 
-        if (result.error) {
-          reject(new Error(result.error));
-        } else {
-          resolve(result);
+    // Function to handle stdout data
+    const handleResponse = (data) => {
+      buffer += data.toString();
+
+      // Try to parse complete JSON objects from buffer
+      while (buffer.length > 0) {
+        try {
+          // Look for the first complete JSON object (ending with newline)
+          const newlineIndex = buffer.indexOf('\n');
+          if (newlineIndex === -1) {
+            // No complete JSON yet, wait for more data
+            break;
+          }
+
+          const jsonStr = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1); // Remove processed data + newline
+
+          if (jsonStr.trim() === '') {
+            // Skip empty lines
+            continue;
+          }
+
+          const result = JSON.parse(jsonStr);
+
+          // Remove the listener since we got our response
+          pythonProcess.stdout.off('data', handleResponse);
+
+          if (result.error) {
+            reject(new Error(result.error));
+          } else {
+            resolve(result);
+          }
+          return; // Exit after resolving/rejecting
+        } catch (err) {
+          // Invalid JSON, discard and continue (shouldn't happen with valid backend)
+          console.error('Failed to parse JSON from Python backend:', err, 'Data:', buffer.slice(0, 100));
+          buffer = ''; // Clear buffer on parse error to avoid infinite loop
+          break;
         }
-      } catch (err) {
-        // Might be receiving partial JSON or just logging info
-        // Ignore until we get a valid JSON response
       }
     };
 
@@ -101,5 +129,29 @@ ipcMain.handle('simplify', async (event, payload) => {
     // Send the request
     const requestJson = JSON.stringify(payload) + '\n';
     pythonProcess.stdin.write(requestJson);
+
+    // Set up timeout to prevent hanging requests
+    const timeoutId = setTimeout(() => {
+      pythonProcess.stdout.off('data', handleResponse);
+      reject(new Error("Request to Python backend timed out"));
+    }, 30000); // 30 second timeout
+
+    // Clean up timeout when promise settles
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      pythonProcess.stdout.off('data', handleResponse);
+    };
+
+    // Attach cleanup to both resolve and reject paths
+    const originalResolve = resolve;
+    const originalReject = reject;
+    resolve = (...args) => {
+      cleanup();
+      return originalResolve(...args);
+    };
+    reject = (...args) => {
+      cleanup();
+      return originalReject(...args);
+    };
   });
-})
+});

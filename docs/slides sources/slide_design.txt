@@ -1,0 +1,186 @@
+Design a university mini-project presentation for an AI-based Disability-Aware Chat Editor developed for neurodivergent users.
+
+The presentation must strictly follow an academic mini-project structure required for engineering faculty evaluation, but the visual identity should subtly reflect accessibility, cognitive clarity, and assistive AI principles.
+
+The design must feel professional, structured, and technically mature — not like a startup pitch deck and not like an overly rigid black-and-white government report.
+
+GENERAL DESIGN STYLE:
+
+• Use a clean, minimal academic layout.
+• Maintain strong visual hierarchy.
+• Ensure readability when printed.
+• Use generous white space for cognitive comfort.
+• Avoid clutter and dense slides.
+
+Color Scheme:
+• Background: very light neutral tone (off-white or soft light grey).
+• Primary accent color: muted deep blue or desaturated teal (used only for titles, section dividers, or subtle highlights).
+• Body text: dark grey (not pure black).
+• High contrast and accessible color usage.
+
+Strictly Avoid:
+• Gradients
+• Heavy shadows
+• Decorative illustrations
+• Bright or saturated colors
+• Startup pitch aesthetics
+• Overly dramatic layouts
+• Marketing-style visuals
+
+TYPOGRAPHY:
+
+• Use one professional sans-serif font consistently (Inter, Calibri, Arial, or Source Sans).
+• Slide titles: bold, larger size, clear spacing.
+• Body text: regular weight, readable size.
+• Maintain consistent margins and alignment.
+• Maximum 5–6 bullet points per slide.
+
+SLIDE STRUCTURE (MANDATORY ORDER):
+
+Title Slide
+
+Table of Contents
+
+Introduction
+
+Problem Statement
+
+Literature Review (Tabular Format)
+
+Objectives
+
+System Design
+
+Work Plan & Task Allocation
+
+Implementation
+
+Results
+
+Conclusion
+
+References
+
+TITLE SLIDE:
+
+• Center aligned.
+• Include only:
+
+College Name
+
+Course Name & Code: Mini Project (CSD 334)
+
+Project Title (technical and specific)
+
+Group Number
+
+Group Members (Name, Roll No, Register No)
+
+Project Guide Name & Designation
+• No additional text.
+• No decorative graphics.
+
+TABLE OF CONTENTS:
+
+• Numbered list of section titles only.
+• No descriptions.
+
+INTRODUCTION:
+
+• Bullet points only.
+• Cover domain overview, importance, motivation, and current challenges.
+• One idea per bullet.
+
+PROBLEM STATEMENT:
+
+• Clearly define the specific problem.
+• Identify affected users.
+• Mention limitations of existing systems.
+• Explain why improvement is required.
+• Avoid vague language.
+
+LITERATURE REVIEW:
+
+• Must be in clean tabular format with visible grid lines.
+• Columns:
+
+Title, Author(s), Year
+
+Methodology / Technique Used
+
+Inference / Key Findings
+
+Limitations / Research Gaps
+• Reverse chronological order.
+• No color coding.
+
+OBJECTIVES:
+
+• Numbered list.
+• Each objective must begin with an action verb.
+• Directly address the problem statement.
+
+SYSTEM DESIGN:
+
+• Include:
+
+Process Flow (Input → Processing → Output)
+
+System Architecture (Modules and Data Flow)
+
+Database Design (if applicable)
+• Use clean labeled diagrams.
+• Use soft bordered boxes.
+• Ensure left-to-right logical flow.
+• Keep diagrams neat and readable.
+
+WORK PLAN & TASK ALLOCATION:
+
+• Use simple tables.
+• Include task distribution per member.
+• Include project timeline (Gantt chart style, minimal and clean).
+• No decorative timeline elements.
+
+IMPLEMENTATION:
+
+• Subsections:
+
+Technology Stack
+
+Development Methodology
+
+Key Modules
+
+Core Algorithms / Logic
+• Bullet points only.
+• No code snippets.
+
+RESULTS:
+
+• Include labeled output screenshots.
+• Show accessibility features clearly.
+• Include performance metrics if applicable.
+• Maintain alignment and spacing.
+• No visual clutter.
+
+CONCLUSION:
+
+• Bullet points only.
+• Summarize problem addressed, solution impact, achievements, learning outcomes, and future enhancements.
+• Avoid repetition.
+
+REFERENCES:
+
+• IEEE format.
+• Reverse chronological order.
+• Include all literature review papers.
+• No visible hyperlinks.
+
+OVERALL FEELING:
+
+The presentation should communicate:
+
+“An academically strong engineering solution built with empathy, clarity, and structured intelligence.”
+
+It must remain formal, but not lifeless.
+It must reflect accessibility and cognitive comfort without losing academic credibility.

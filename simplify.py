@@ -26,8 +26,9 @@ from autism_mode import format_for_autism
 from utils import read_input_file, split_sentences, compute_metrics, print_metrics
 
 
-# Cache for loaded models
+# Cache for loaded models with size limit to prevent memory leaks
 _models = {}
+_MAX_MODEL_CACHE_SIZE = 3
 
 
 def _select_by_task_complexity(text: str) -> str:
@@ -73,12 +74,27 @@ def _select_model(choice: str, text: str) -> str:
 
 
 def _load_model(model_name: str):
-    """Load specified T5 model."""
+    """Load specified T5 model with error handling and cache management."""
     if model_name not in _models:
-        tokenizer = T5Tokenizer.from_pretrained(model_name)
-        model = T5ForConditionalGeneration.from_pretrained(model_name)
-        model.eval()
-        _models[model_name] = (model, tokenizer)
+        try:
+            tokenizer = T5Tokenizer.from_pretrained(model_name)
+            model = T5ForConditionalGeneration.from_pretrained(model_name)
+            model.eval()
+            _models[model_name] = (model, tokenizer)
+
+            # Limit cache size to prevent memory leaks
+            if len(_models) > _MAX_MODEL_CACHE_SIZE:
+                # Remove the oldest entry (simple FIFO approach)
+                oldest_key = next(iter(_models))
+                del _models[oldest_key]
+
+        except Exception as e:
+            logging.error(f"Failed to load model {model_name}: {str(e)}")
+            # Fallback to a smaller model or raise informative error
+            if model_name != "./t5-simplifier":  # Avoid infinite recursion
+                logging.info(f"Falling back to base t5-simplifier model from {model_name}")
+                return _load_model("./t5-simplifier")
+            raise RuntimeError(f"Could not load any model: {str(e)}")
     return _models[model_name]
 
 
@@ -112,14 +128,14 @@ def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
     return " ".join(simplified)
 
 
-def process_text(text: str, mode: str, model_name: str = "t5-small") -> str:
+def process_text(text: str, mode: str, model_name: str = "t5-small", use_hyphenation: bool = False) -> str:
     """Process text according to the specified mode."""
     # 1. Neural Simplification (Shared)
     simplified = simplify_with_t5(text, model_name)
 
     # 2. Mode-Specific Post-Processing
     if mode == "dyslexia":
-        return format_for_dyslexia(simplified, split_sentences)
+        return format_for_dyslexia(simplified, split_sentences, use_hyphenation)
     elif mode == "adhd":
         return format_for_adhd(simplified)
     elif mode == "autism":
@@ -154,6 +170,11 @@ def main():
         action="store_true",
         help="Show readability metrics (before vs after)"
     )
+    parser.add_argument(
+        "--use-hyphenation",
+        action="store_true",
+        help="Enable hyphenation of long words (not recommended for dyslexia per BDA guidelines)"
+    )
 
     args = parser.parse_args()
 
@@ -162,7 +183,7 @@ def main():
     # Select appropriate model
     model_name = _select_model(args.model, text)
 
-    result = process_text(text, args.mode, model_name)
+    result = process_text(text, args.mode, model_name, args.use_hyphenation)
     print(result)
 
     if args.metrics:

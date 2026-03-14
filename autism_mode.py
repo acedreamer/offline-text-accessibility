@@ -1,51 +1,72 @@
 """Autism accessibility formatting logic."""
 import re
+import json
+from pathlib import Path
 
-IDIOM_MAP = {
-    "piece of cake": "easy",
-    "break a leg": "good luck",
-    "hit the nail on the head": "exactly correct",
-    "under the weather": "feeling sick",
-    "cost an arm and a leg": "very expensive",
-    "let the cat out of the bag": "revealed a secret",
-    "bite the bullet": "endure something difficult",
-    "once in a blue moon": "very rarely",
-    "break the ice": "start a conversation",
-    "spill the beans": "reveal information",
-    "ball is in your court": "your decision",
-    "see eye to eye": "agree",
-    "back to the drawing board": "start over",
-    "the whole nine yards": "everything",
-    "on the same page": "in agreement",
-    "raining cats and dogs": "raining heavily",
-    "kick the bucket": "die",
-    "beat around the bush": "avoid the main topic",
-    "burning the midnight oil": "working late",
-    "a penny for your thoughts": "what are you thinking",
-}
+def load_idiom_map() -> dict:
+    """Load idiom mappings from JSON file."""
+    try:
+        idiom_path = Path(__file__).parent / "idiom_map.json"
+        with open(idiom_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Fallback to default map if file not found
+        return {
+            "piece of cake": "easy",
+            "break a leg": "good luck",
+            "hit the nail on the head": "exactly correct",
+            "under the weather": "feeling sick",
+            "cost an arm and a leg": "very expensive",
+            "let the cat out of the bag": "revealed a secret",
+            "bite the bullet": "endure something difficult",
+            "once in a blue moon": "very rarely",
+            "break the ice": "start a conversation",
+            "spill the beans": "reveal information",
+            "ball is in your court": "your decision",
+            "see eye to eye": "agree",
+            "back to the drawing board": "start over",
+            "the whole nine yards": "everything",
+            "on the same page": "in agreement",
+            "raining cats and dogs": "raining heavily",
+            "kick the bucket": "die",
+            "beat around the bush": "avoid the main topic",
+            "burning the midnight oil": "working late",
+            "a penny for your thoughts": "what are you thinking"
+        }
 
-# Academic/medical terms — replaced literally (case-sensitive, acronyms exact-match)
-JARGON_MAP = {
-    "volBMD": "bone mineral density",
-    "DXA": "bone density scan",
-    "CSMI": "cross-sectional moment of inertia",
-    "BMC": "bone mineral content",
-    "BSI": "bone strength index",
-    "MRI": "magnetic resonance imaging",
-    "CSA": "cross-sectional area",
-    "myocardial infarction": "heart attack",
-    "hypertension": "high blood pressure",
-    "renal": "kidney-related",
-    "hepatic": "liver-related",
-    "pulmonary": "lung-related",
-    "cognition": "thinking and memory",
-    "efficacy": "how well it works",
-    "placebo": "inactive dummy treatment",
-    "statistically significant": "unlikely to be by chance",
-    "et al.": "and others",
-    "i.e.": "that is",
-    "e.g.": "for example",
-}
+def load_jargon_map() -> dict:
+    """Load jargon mappings from JSON file."""
+    try:
+        jargon_path = Path(__file__).parent / "jargon_map.json"
+        with open(jargon_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Fallback to default map if file not found
+        return {
+            "volBMD": "bone mineral density",
+            "DXA": "bone density scan",
+            "CSMI": "cross-sectional moment of inertia",
+            "BMC": "bone mineral content",
+            "BSI": "bone strength index",
+            "MRI": "magnetic resonance imaging",
+            "CSA": "cross-sectional area",
+            "myocardial infarction": "heart attack",
+            "hypertension": "high blood pressure",
+            "renal": "kidney-related",
+            "hepatic": "liver-related",
+            "pulmonary": "lung-related",
+            "cognition": "thinking and memory",
+            "efficacy": "how well it works",
+            "placebo": "inactive dummy treatment",
+            "statistically significant": "unlikely to be by chance",
+            "et al.": "and others",
+            "i.e.": "that is",
+            "e.g.": "for example"
+        }
+
+# Load maps (will use fallbacks if JSON files not found)
+IDIOM_MAP = load_idiom_map()
+JARGON_MAP = load_jargon_map()
 
 
 def _replace_idioms(text: str) -> str:
