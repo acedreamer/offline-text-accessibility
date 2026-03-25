@@ -115,11 +115,13 @@ def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
         outputs = model.generate(
             inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_length=128,
-            num_beams=4,
-            length_penalty=0.8,
+            max_length=256,          # Increased from 128 for explanatory text
+            num_beams=4,             # Beam search (deterministic)
+            length_penalty=1.2,      # Slight preference for longer outputs
             no_repeat_ngram_size=3,
             early_stopping=True,
+            # NOTE: temperature is NOT used with beam search
+            # Temperature is for sampling (do_sample=True), which conflicts with beam search
         )
 
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
