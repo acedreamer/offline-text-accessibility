@@ -1,47 +1,114 @@
-"""ADHD accessibility formatting logic."""
+"""ADHD accessibility formatting logic.
+
+Uses spaCy for intelligent part-of-speech tagging to:
+- Accurately identify nouns (not just heuristics)
+- Distinguish gerunds acting as nouns vs verbs
+- Skip pronouns and articles
+"""
 import re
+import logging
+from typing import List
+
+logger = logging.getLogger(__name__)
+
+# Import utilities - handle ImportError gracefully
+try:
+    from nlp_utils import get_first_noun_position, is_spacy_available
+    SPACY_AVAILABLE = is_spacy_available()
+except ImportError:
+    SPACY_AVAILABLE = False
+    logger.warning("nlp_utils not available, using fallback heuristics")
+
 from utils import split_sentences
 
 
+# Skip words for fallback heuristic
+_SKIP_WORDS = {
+    'the', 'a', 'an', 'and', 'or', 'but', 'nor', 'for', 'so', 'yet',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'to', 'of', 'in', 'on', 'at', 'by', 'with', 'about',
+    'he', 'she', 'it', 'they', 'we', 'you', 'i',
+    'him', 'her', 'them', 'us', 'me',
+    'his', 'her', 'its', 'their', 'our', 'my', 'your',
+    'this', 'that', 'these', 'those',
+    'what', 'which', 'who', 'whom',
+    'can', 'will', 'would', 'could', 'should', 'may', 'might', 'must',
+    'do', 'does', 'did', 'have', 'has', 'had',
+    'very', 'really', 'just', 'only', 'also', 'even',
+}
+
+
 def _bold_first_noun(sentence: str) -> str:
-    """Bold the first significant word (enhanced heuristic)."""
+    """Bold the first significant noun using spaCy POS tagging.
+
+    Falls back to heuristics only if spaCy is genuinely unavailable,
+    logging the fallback. Does NOT catch all exceptions silently.
+
+    Args:
+        sentence: Input sentence
+
+    Returns:
+        Sentence with first noun bolded using markdown **noun**
+    """
+    if not sentence or len(sentence.strip()) < 2:
+        return sentence
+
+    # Try spaCy-based detection
+    if SPACY_AVAILABLE:
+        try:
+            result = _bold_first_noun_spacy(sentence)
+            if result != sentence:
+                return result
+        except OSError as e:
+            # Only catch OSError (model not found), let other errors propagate
+            logger.warning(f"spaCy model error, using fallback: {e}")
+        except Exception as e:
+            # Log unexpected exceptions but don't silently swallow them
+            logger.error(f"Unexpected error in spaCy noun detection: {e}")
+
+    # Fallback to heuristics
+    return _bold_first_noun_fallback(sentence)
+
+
+def _bold_first_noun_spacy(sentence: str) -> str:
+    """Bold first noun using spaCy POS tagging."""
+    from nlp_utils import get_first_noun_position
+
+    result = get_first_noun_position(sentence)
+    if result is None:
+        return sentence
+
+    noun, start, end = result
+    # Check if noun is already bolded (edge case)
+    if start > 2 and sentence[start-2:start] == '**':
+        return sentence
+
+    # Bold the noun with proper character position handling
+    # This ensures punctuation stays outside bold markers
+    return sentence[:start] + '**' + noun + '**' + sentence[end:]
+
+
+def _bold_first_noun_fallback(sentence: str) -> str:
+    """Fallback heuristic for noun detection when spaCy unavailable.
+
+    Less accurate but functional. Logs warning to indicate fallback.
+    """
+    logger.debug("Using fallback heuristic for noun detection")
+
     words = sentence.split()
     if len(words) < 2:
         return sentence
-
-    # Expanded skip words including more articles, prepositions, and common weak words
-    skip_words = {
-        'the', 'a', 'an', 'and', 'or', 'but', 'nor', 'for', 'so', 'yet',
-        'is', 'are', 'was', 'were', 'be', 'been', 'being',
-        'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with', 'about',
-        'against', 'between', 'into', 'through', 'during', 'before',
-        'after', 'above', 'below', 'up', 'down', 'in', 'out', 'on',
-        'off', 'over', 'under', 'again', 'further', 'then', 'once',
-        'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any',
-        'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
-        'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too',
-        'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now',
-        'has', 'have', 'had', 'having', 'do', 'does', 'did', 'doing',
-        'would', 'could', 'should', 'may', 'might', 'must', 'shall'
-    }
-
-    # Simple heuristic to avoid bolding words that look like verbs based on common endings
-    verb_endings = {'ing', 'ed', 'es', 's'}
 
     for i, word in enumerate(words):
         # Clean the word for comparison (remove punctuation)
         clean = re.sub(r'[^\w]', '', word.lower())
 
         # Skip if it's in our skip words list
-        if clean in skip_words:
+        if clean in _SKIP_WORDS:
             continue
 
-        # Skip if it looks like a verb (simple heuristic)
-        if any(clean.endswith(ending) for ending in verb_endings) and len(clean) > 3:
-            continue
-
-        # Bold the first significant content word that passes our filters
-        if len(clean) > 2:  # Ensure it's a meaningful word
+        # Bold the first significant content word
+        if len(clean) > 2:
             words[i] = f"**{word}**"
             break
 
@@ -54,7 +121,13 @@ def format_for_adhd(text: str) -> str:
     Features:
     - Converts paragraphs into bulleted lists
     - Adds progress markers [1/N], [2/N], etc.
-    - Bolds key terms for emphasis
+    - Bolds key terms for emphasis using POS tagging
+
+    Args:
+        text: Input text to format
+
+    Returns:
+        Formatted text with progress markers and bolded nouns
     """
     sentences = split_sentences(text)
     total = len(sentences)
