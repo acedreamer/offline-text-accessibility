@@ -129,6 +129,12 @@ def format_for_adhd(text: str) -> str:
     Returns:
         Formatted text with progress markers and bolded nouns
     """
+    if not text or not text.strip():
+        return text
+
+    from utils import correct_spelling
+    text = correct_spelling(text)
+
     sentences = split_sentences(text)
     total = len(sentences)
 

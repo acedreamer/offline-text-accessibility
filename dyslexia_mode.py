@@ -181,6 +181,12 @@ def format_for_dyslexia(text: str, split_sentences_func, use_hyphenation: bool =
     Returns:
         Formatted text with one sentence per paragraph
     """
+    if not text or not text.strip():
+        return text
+
+    from utils import correct_spelling
+    text = correct_spelling(text)
+
     sentences = split_sentences_func(text)
     output_lines = []
 

@@ -70,7 +70,7 @@ def _select_model(choice: str, text: str) -> str:
         return _select_by_task_complexity(text)
     elif choice == "auto-device":
         return _select_by_device()
-    return "./t5-simplifier"  # default
+    return "./t5-simplifier" # default
 
 
 def _load_model(model_name: str):
@@ -91,17 +91,26 @@ def _load_model(model_name: str):
         except Exception as e:
             logging.error(f"Failed to load model {model_name}: {str(e)}")
             # Fallback to a smaller model or raise informative error
-            if model_name != "./t5-simplifier":  # Avoid infinite recursion
+            if model_name != "./t5-simplifier": # Avoid infinite recursion
                 logging.info(f"Falling back to base t5-simplifier model from {model_name}")
                 return _load_model("./t5-simplifier")
             raise RuntimeError(f"Could not load any model: {str(e)}")
     return _models[model_name]
 
 
-def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
+# Mode-specific prompt templates - short and direct for T5
+_MODE_PROMPTS = {
+    "dyslexia": "correct spelling and simplify: {sentence}",
+    "adhd": "simplify keeping all details: {sentence}",
+    "autism": "make literal and clear: {sentence}",
+}
+
+
+def simplify_with_t5(text: str, model_name: str = "./t5-simplifier", mode: str = None) -> str:
     """Simplify text using T5 model.
 
     Processes sentence by sentence for better results.
+    Uses mode-specific prompting for targeted simplification.
     """
     model, tokenizer = _load_model(model_name)
 
@@ -109,19 +118,45 @@ def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
     simplified = []
 
     for sentence in sentences:
-        input_text = f"simplify: {sentence}"
+        # Use mode-specific prompt for better targeting
+        if mode and mode in _MODE_PROMPTS:
+            input_text = _MODE_PROMPTS[mode].format(sentence=sentence)
+        else:
+            input_text = f"simplify: {sentence}"
+
         inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=512)
+
+        # Base generation parameters
+        gen_kwargs = {
+            "max_length": 256,
+            "num_beams": 4,
+            "no_repeat_ngram_size": 3,
+            "early_stopping": True,
+        }
+
+        # Mode-specific generation tuning
+        if mode == "dyslexia":
+            # Prefer longer outputs to preserve meaning, focus on correction
+            gen_kwargs["length_penalty"] = 1.5
+            gen_kwargs["min_length"] = max(5, len(sentence.split()) // 2)
+            gen_kwargs["repetition_penalty"] = 1.1
+        elif mode == "adhd":
+            # CRITICAL: preserve ALL content, strong length preference
+            gen_kwargs["length_penalty"] = 2.5
+            gen_kwargs["min_length"] = max(20, len(sentence.split()) - 10)
+            gen_kwargs["repetition_penalty"] = 1.0
+        elif mode == "autism":
+            # Allow explanations for idioms, moderate length
+            gen_kwargs["length_penalty"] = 1.8
+            gen_kwargs["min_length"] = max(8, len(sentence.split()) // 2)
+            gen_kwargs["repetition_penalty"] = 1.1
+        else:
+            gen_kwargs["length_penalty"] = 1.2
 
         outputs = model.generate(
             inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            max_length=256,          # Increased from 128 for explanatory text
-            num_beams=4,             # Beam search (deterministic)
-            length_penalty=1.2,      # Slight preference for longer outputs
-            no_repeat_ngram_size=3,
-            early_stopping=True,
-            # NOTE: temperature is NOT used with beam search
-            # Temperature is for sampling (do_sample=True), which conflicts with beam search
+            **gen_kwargs
         )
 
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -132,8 +167,8 @@ def simplify_with_t5(text: str, model_name: str = "./t5-simplifier") -> str:
 
 def process_text(text: str, mode: str, model_name: str = "t5-small", use_hyphenation: bool = False) -> str:
     """Process text according to the specified mode."""
-    # 1. Neural Simplification (Shared)
-    simplified = simplify_with_t5(text, model_name)
+    # 1. Neural Simplification (Shared) - now mode-aware
+    simplified = simplify_with_t5(text, model_name, mode=mode)
 
     # 2. Mode-Specific Post-Processing
     if mode == "dyslexia":
