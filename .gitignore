@@ -44,3 +44,4 @@ project state.md
 
 # Claude agent configs (optional - remove this line if you want to include them)
 # .claude/
+.worktrees/
