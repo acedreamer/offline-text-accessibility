@@ -63,14 +63,16 @@ python simplify.py --input sample.txt --mode dyslexia --metrics
 ## 🏗️ How It Works
 
 ```
-Input Text → Neural Simplification → Mode Formatting → Output
-     ↓              (T5)              (Rules-based)      ↓
-  Raw text   Sentence-by-sentence   Dyslexia/ADHD/Autism  Ready-to-read
+Input Text → Preprocessing → Neural Simplification → Mode Formatting → Output
+     ↓              (Cleanup)           (T5 + ACCESS)      (Rules-based)      ↓
+  Raw text   (Idioms/Jargon/Homophone) Sentence-by-sentence   Dyslexia/ADHD/Autism  Ready-to-read
 ```
 
-1. **Neural Simplification** (T5 Transformer)
-   - Fine-tuned model (`t5-simplifier/`) on accessibility-focused parallel corpora
-   - Sentence-level processing with mode-specific prompts
+1. **Neural Simplification** (T5 Transformer with ACCESS Control Tokens)
+   - Fine-tuned model (`t5/`) on accessibility-focused parallel corpora
+   - Preprocessing: Idiom/jargon replacement and homophone correction
+   - Sentence-level processing with ACCESS control tokens for mode-specific guidance
+   - Dynamic length constraints prevent over-summarization
    - Handles spelling, grammar, and vocabulary simplification
 
 2. **Rule-Based Post-Processing**
@@ -133,7 +135,7 @@ offline-text-accessibility/
 │       ├── App.jsx
 │       ├── context/
 │       └── components/
-├── t5-simplifier/        # Fine-tuned T5 model (local)
+├── t5/        # Fine-tuned T5 model (local)
 ├── expand_maps.py        # Utility: expand maps with morphological variants
 ├── __tests__/            # Unit tests
 └── docs/                 # Additional documentation
@@ -209,21 +211,23 @@ The application consists of three layers:
    - TailwindCSS for styling with CSS custom properties
 
 2. **Backend** – Python simplification server
-   - T5 transformer model (HuggingFace)
-   - Sentence-level processing with mode-specific prompting
+   - T5 transformer model (HuggingFace) with ACCESS control token guidance
+   - Preprocessing pipeline: Idiom/jargon replacement and homophone correction
+   - Sentence-level processing with dynamic length constraints to prevent over-summarization
    - LRU model cache (up to 3 models)
    - JSON-over-stdin/stdout protocol
 
 3. **Models** – Fine-tuned T5 on accessibility data
-   - Location: `t5-simplifier/` (local directory)
-   - Prompt templates for each mode
-   - Tuned generation parameters (length penalty, beam search)
-
+   - Location: `t5/` (local directory)
+   - ACCESS control token profiles for mode-specific guidance
+   - Dynamic length constraints and penalties for optimal output
+   - Tuned generation parameters (beam search, repetition penalty)
+   - Preprocessing-ready design for clean input
 ### Model Selection
 
 ```python
 # In simplify.py
-model_choice = "small"      # ./t5-simplifier (default, fastest)
+model_choice = "small"      # ./t5 (default, fastest)
 # or
 model_choice = "medium"     # t5-medium (higher quality, more RAM)
 # or

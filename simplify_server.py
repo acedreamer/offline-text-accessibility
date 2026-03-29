@@ -16,7 +16,7 @@ from utils import compute_metrics
 
 # Use absolute path for the local model to avoid huggingface trying to parse it as a hub ID
 # when run from a different working directory
-MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "t5-simplifier")
+MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "t5")
 
 def format_for_dyslexia(simplified_text: str, split_func, use_hyphenation: bool = False) -> str:
     """Imported logic for dyslexia formatting"""
@@ -35,8 +35,8 @@ def format_for_autism(simplified_text: str) -> str:
 
 def process_text(text: str, mode: str, model_name: str = MODEL_DIR, use_hyphenation: bool = False) -> str:
     """Process text according to the specified mode."""
-    # 1. Neural Simplification
-    simplified = simplify_with_t5(text, model_name)
+    # 1. Neural Simplification with ACCESS control tokens
+    simplified = simplify_with_t5(text, model_name, mode=mode)
 
     # 2. Mode-Specific Post-Processing
     if mode == "dyslexia":
@@ -65,15 +65,15 @@ def main():
         try:
             request = json.loads(line)
 
-            # Expected payload: { "text": "...", "mode": "dyslexia", "model": "./t5-simplifier", "useHyphenation": false }
+            # Expected payload: { "text": "...", "mode": "dyslexia", "model": "./t5", "useHyphenation": false }
             text = request.get("text", "")
             mode = request.get("mode", "dyslexia")
             use_hyphenation = request.get("useHyphenation", False)
 
-            # Translate the frontend's "./t5-simplifier" to the absolute path
+            # Translate the frontend's "./t5" to the absolute path
             # Otherwise huggingface throws a validation error when running from a subfolder
             model_name = request.get("model", MODEL_DIR)
-            if model_name == "./t5-simplifier":
+            if model_name == "./t5":
                 model_name = MODEL_DIR
 
             if not text:

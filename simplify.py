@@ -5,6 +5,9 @@ import argparse
 import os
 import warnings
 import logging
+import re
+import json
+from pathlib import Path
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["HF_HUB_VERBOSITY"] = "error"
@@ -20,10 +23,52 @@ hf_utils_logging.disable_progress_bar()
 # Import mode-specific logic
 from dyslexia_mode import format_for_dyslexia
 from adhd_mode import format_for_adhd
-from autism_mode import format_for_autism
+from autism_mode import format_for_autism, _load_idiom_map, _load_jargon_map
 
 # Import shared utilities
-from utils import read_input_file, split_sentences, compute_metrics, print_metrics
+from utils import read_input_file, split_sentences, compute_metrics, print_metrics, correct_spelling
+
+# Preprocessing functions for idiom/jargon replacement and homophone correction
+def _preprocess_text(text: str) -> str:
+    """Apply preprocessing steps to reduce model workload:
+    1. Replace idioms with literal meanings (simplifies complex expressions)
+    2. Replace jargon with plain language (reduces cognitive load)
+    3. Correct spelling/homophones (helps model understand input better)
+    """
+    if not text or not text.strip():
+        return text
+
+    # 1. Replace idioms (using autism mode's context-aware replacement)
+    processed = text
+    idiom_map = _load_idiom_map()
+    if idiom_map:
+        result = processed
+        for idiom, literal in idiom_map.items():
+            pattern = rf'\b{re.escape(idiom)}\b'
+            matches = list(re.finditer(pattern, result, re.IGNORECASE))
+            for match in reversed(matches):
+                # Simple context check - could be enhanced with autism_mode's logic
+                # For preprocessing, we'll apply broadly to simplify input for model
+                result = result[:match.start()] + f"{literal}" + result[match.end():]
+        processed = result
+
+    # 2. Replace jargon (using autism mode's logic)
+    jargon_map = _load_jargon_map()
+    if jargon_map:
+        result = processed
+        for term, plain in jargon_map.items():
+            if term.isupper() or (len(term) > 1 and any(c.isupper() for c in term[1:])):
+                pattern = rf'(?<!\w){re.escape(term)}(?!\w)'
+                result = re.sub(pattern, f"{plain}", result)
+            else:
+                pattern = rf'\b{re.escape(term)}\b'
+                result = re.sub(pattern, f"{plain}", result, flags=re.IGNORECASE)
+        processed = result
+
+    # 3. Correct spelling and homophones
+    processed = correct_spelling(processed)
+
+    return processed
 
 
 # Cache for loaded models with size limit to prevent memory leaks
@@ -35,14 +80,14 @@ def _select_by_task_complexity(text: str) -> str:
     """Select model based on text complexity."""
     words = text.split()
     if not words:
-        return "./t5-simplifier"
+        return "./t5"
 
     avg_word_len = sum(len(w) for w in words) / len(words)
 
     # Heuristic: longer words = more complex = needs better model
     if avg_word_len > 6 or len(words) > 200:
         return "t5-medium"
-    return "./t5-simplifier"
+    return "./t5"
 
 
 def _select_by_device() -> str:
@@ -54,23 +99,23 @@ def _select_by_device() -> str:
         # t5-medium needs ~2GB RAM for comfortable operation
         if available_gb > 4:
             return "t5-medium"
-        return "./t5-simplifier"
+        return "./t5"
     except ImportError:
         # psutil not available, default to fine-tuned model
-        return "./t5-simplifier"
+        return "./t5"
 
 
 def _select_model(choice: str, text: str) -> str:
     """Determine which model to use."""
     if choice == "small":
-        return "./t5-simplifier"
+        return "./t5"
     elif choice == "medium":
         return "t5-medium"
     elif choice == "auto-task":
         return _select_by_task_complexity(text)
     elif choice == "auto-device":
         return _select_by_device()
-    return "./t5-simplifier" # default
+    return "./t5" # default
 
 
 def _load_model(model_name: str):
@@ -91,81 +136,106 @@ def _load_model(model_name: str):
         except Exception as e:
             logging.error(f"Failed to load model {model_name}: {str(e)}")
             # Fallback to a smaller model or raise informative error
-            if model_name != "./t5-simplifier": # Avoid infinite recursion
+            if model_name != "./t5": # Avoid infinite recursion
                 logging.info(f"Falling back to base t5-simplifier model from {model_name}")
-                return _load_model("./t5-simplifier")
+                return _load_model("./t5")
             raise RuntimeError(f"Could not load any model: {str(e)}")
     return _models[model_name]
 
 
-# Mode-specific prompt templates - short and direct for T5
-_MODE_PROMPTS = {
-    "dyslexia": "correct spelling and simplify: {sentence}",
-    "adhd": "simplify keeping all details: {sentence}",
-    "autism": "make literal and clear: {sentence}",
+# ACCESS control token profiles for neurodivergent simplification
+# Format: <LengthRatio_X> <DepDepth_Y> <WordRank_Z> <CCR_W>
+# Lower numbers = more aggressive transformation
+ACCESS_PROFILES = {
+    "dyslexia": "<LengthRatio_5> <DepDepth_2> <WordRank_2> <CCR_5>",
+    "adhd": "<LengthRatio_2> <DepDepth_2> <WordRank_5> <CCR_5>",
+    "autism": "<LengthRatio_5> <DepDepth_4> <WordRank_5> <CCR_2>",
+    "default": "<LengthRatio_5> <DepDepth_5> <WordRank_5> <CCR_5>",
 }
 
 
-def simplify_with_t5(text: str, model_name: str = "./t5-simplifier", mode: str = None) -> str:
-    """Simplify text using T5 model.
+def simplify_with_t5(text: str, model_name: str = "./t5", mode: str = None) -> str:
+    """Simplify text using T5 model with ACCESS control tokens.
 
+    Preprocesses text to correct spelling/homophones and replace idioms/jargon
+    before applying control-token guided simplification.
     Processes sentence by sentence for better results.
-    Uses mode-specific prompting for targeted simplification.
+    Uses control token prefixes for neurodivergent-specific simplification.
     """
+    import torch
+
     model, tokenizer = _load_model(model_name)
 
-    sentences = split_sentences(text)
-    simplified = []
+    # Preprocess text to reduce model workload:
+    # - Correct spelling/homophones
+    # - Replace idioms with literal meanings
+    # - Replace jargon with plain language
+    processed_text = _preprocess_text(text)
+
+    # Get the correct ACCESS tokens for the requested mode
+    prefix = ACCESS_PROFILES.get(mode, ACCESS_PROFILES["default"])
+
+    sentences = split_sentences(processed_text)
+    simplified_sentences = []
 
     for sentence in sentences:
-        # Use mode-specific prompt for better targeting
-        if mode and mode in _MODE_PROMPTS:
-            input_text = _MODE_PROMPTS[mode].format(sentence=sentence)
-        else:
-            input_text = f"simplify: {sentence}"
+        # Construct the exact prompt the model expects
+        input_text = f"{prefix} simplify: {sentence}"
 
-        inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=512)
-
-        # Base generation parameters
-        gen_kwargs = {
-            "max_length": 256,
-            "num_beams": 4,
-            "no_repeat_ngram_size": 3,
-            "early_stopping": True,
-        }
-
-        # Mode-specific generation tuning
-        if mode == "dyslexia":
-            # Prefer longer outputs to preserve meaning, focus on correction
-            gen_kwargs["length_penalty"] = 1.5
-            gen_kwargs["min_length"] = max(5, len(sentence.split()) // 2)
-            gen_kwargs["repetition_penalty"] = 1.1
-        elif mode == "adhd":
-            # CRITICAL: preserve ALL content, strong length preference
-            gen_kwargs["length_penalty"] = 2.5
-            gen_kwargs["min_length"] = max(20, len(sentence.split()) - 10)
-            gen_kwargs["repetition_penalty"] = 1.0
-        elif mode == "autism":
-            # Allow explanations for idioms, moderate length
-            gen_kwargs["length_penalty"] = 1.8
-            gen_kwargs["min_length"] = max(8, len(sentence.split()) // 2)
-            gen_kwargs["repetition_penalty"] = 1.1
-        else:
-            gen_kwargs["length_penalty"] = 1.2
-
-        outputs = model.generate(
-            inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            **gen_kwargs
+        inputs = tokenizer(
+            input_text,
+            return_tensors="pt",
+            max_length=256,
+            truncation=True
         )
 
+        # --- THE FIX: Calculate dynamic length constraints ---
+        # Count how many tokens are in the input sentence (excluding the prefix)
+        # We want to force the model to keep at least 75% to 85% of the original length
+        # to prevent it from deleting dependent clauses like "to avoid stomach upset".
+        raw_sentence_tokens = len(tokenizer.encode(sentence))
+
+        # Adjust minimum length preservation based on the mode
+        if mode == "adhd":
+            # ADHD mode: high compression allowed, chunking is good
+            min_out_len = int(raw_sentence_tokens * 0.5)
+            len_penalty = 1.0
+        elif mode == "autism":
+            # Autism mode: preserve almost all context to explain idioms
+            min_out_len = int(raw_sentence_tokens * 0.85)
+            len_penalty = 2.0
+        else:  # dyslexia or default
+            # Dyslexia: preserve meaning but allow some word removal
+            min_out_len = int(raw_sentence_tokens * 0.7)
+            len_penalty = 1.5
+
+        with torch.no_grad():
+            outputs = model.generate(
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_length=128,
+                min_length=min_out_len,  # <-- Prevents aggressive deletion
+                num_beams=4,
+                length_penalty=len_penalty,  # <-- Forces different paths per profile
+                repetition_penalty=1.2,
+                no_repeat_ngram_size=3,
+                early_stopping=True
+            )
+
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        simplified.append(result)
 
-    return " ".join(simplified)
+        # Capitalize first letter of each sentence for proper post-processing
+        if result:
+            result = result[0].upper() + result[1:] if len(result) > 0 else result
+            import re
+            result = re.sub(r'([.!?]\s+)([a-z])', lambda m: m.group(1) + m.group(2).upper(), result)
+
+        simplified_sentences.append(result.strip())
+
+    return " ".join(simplified_sentences)
 
 
-def process_text(text: str, mode: str, model_name: str = "t5-small", use_hyphenation: bool = False) -> str:
+def process_text(text: str, mode: str, model_name: str = "./t5", use_hyphenation: bool = False) -> str:
     """Process text according to the specified mode."""
     # 1. Neural Simplification (Shared) - now mode-aware
     simplified = simplify_with_t5(text, model_name, mode=mode)
