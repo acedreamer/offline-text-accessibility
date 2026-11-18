@@ -1,0 +1,16 @@
+{
+  "name": "simplify-ai-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline Hybrid Neuro-Symbolic Text Accessibility Desktop App (Fine-tuned T5 + spaCy + Electron)",
+  "scripts": {
+    "postinstall": "npm --prefix electron-app install",
+    "start": "npm --prefix electron-app run start",
+    "dev": "npm --prefix electron-app run dev",
+    "build": "npm --prefix electron-app run build",
+    "lint": "npm --prefix electron-app run lint",
+    "preview": "npm --prefix electron-app run preview",
+    "test": "npm --prefix electron-app test",
+    "test:python": "pytest test_simplifier.py"
+  }
+}

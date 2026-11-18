@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test": "echo \"No frontend test suite configured\" && exit 0",
     "start": "concurrently \"npm run dev\" \"npm run electron:dev\"",
     "electron:dev": "wait-on tcp:5173 && set \"VITE_DEV_SERVER_URL=http://localhost:5173\" && .\\node_modules\\electron\\dist\\electron.exe ."
   },
