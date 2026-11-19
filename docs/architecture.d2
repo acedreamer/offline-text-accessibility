@@ -1,4 +1,4 @@
-direction: right
+grid-columns: 2
 
 zone1: "01 · Client & Warm IPC Bridge" {
   ui: "Electron + React UI\n(WCAG AAA · OpenDyslexic)"
@@ -19,14 +19,6 @@ zone2: "02 · Symbolic Pre-Pass (utils.py)" {
   ctx_gate -> lexicon: "NO (Figurative)"
 }
 
-zone3: "03 · Neural Core (simplify.py)" {
-  prompt: "Inject ACCESS Control Tokens\n& Dynamic Max-Length Guard"
-  t5: "Fine-Tuned T5-Small\n(t5-simplifier · Offline CPU)"
-  quality_gate: "Valid Output &\nNo Repetition Loop?" { shape: diamond }
-
-  prompt -> t5 -> quality_gate
-}
-
 zone4: "04 · Cognitive Post-Pass & Telemetry" {
   mode_gate: "Target Profile?" { shape: diamond }
   dyslexia: "Dyslexia Mode\nClause Split + BDA Spacing + TTS"
@@ -40,6 +32,14 @@ zone4: "04 · Cognitive Post-Pass & Telemetry" {
   dyslexia -> telemetry
   adhd -> telemetry
   autism -> telemetry
+}
+
+zone3: "03 · Neural Core (simplify.py)" {
+  prompt: "Inject ACCESS Control Tokens\n& Dynamic Max-Length Guard"
+  t5: "Fine-Tuned T5-Small\n(t5-simplifier · Offline CPU)"
+  quality_gate: "Valid Output &\nNo Repetition Loop?" { shape: diamond }
+
+  prompt -> t5 -> quality_gate
 }
 
 zone1.server -> zone2.clean: "Stage 1"
