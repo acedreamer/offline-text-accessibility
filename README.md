@@ -35,35 +35,9 @@ The architecture marries **neural generation** with **deterministic symbolic rul
 
 ## System Architecture
 
-```mermaid
-flowchart TD
-    subgraph UI ["Desktop Presentation Layer (Electron + React 19)"]
-        A["React UI (WCAG AAA)"]
-        B["Mode Selector: Dyslexia | ADHD | Autism"]
-        C["Readability Telemetry Bar (Flesch / Word Delta)"]
-        D["TTS Engine (Word-Boundary Highlighting)"]
-    end
-
-    subgraph IPC ["Runtime Bridge"]
-        E["Electron Main Process (main.js)"]
-        F["Persistent Python Process (simplify_server.py)<br/><i>Keeps PyTorch & spaCy warm in memory (~1-2s latency)</i>"]
-    end
-
-    subgraph Pipeline ["Hybrid Neuro-Symbolic Pipeline"]
-        G["Stage 1: Deterministic Preprocessing (utils.py)<br/>• Homophone & contraction expansion<br/>• 5,208 Idiom & 2,055 Jargon mappings<br/>• Literal vs. figurative context disambiguation"]
-        H["Stage 2: Neural Generation (simplify.py)<br/>• Fine-tuned T5 (t5-simplifier/)<br/>• Mode-specific ACCESS control tokens<br/>• Dynamic input-proportional min/max length constraints<br/>• Beam search (num_beams=4, repetition_penalty=1.2)"]
-        I["Stage 3: Cognitive Formatters<br/>• dyslexia_mode.py: Conjunction splitting & BDA spacing<br/>• adhd_mode.py: spaCy POS noun bolding & [1/N] markers<br/>• autism_mode.py: Figurative replacement anchoring"]
-        J["Stage 4: Readability Telemetry (utils.py)<br/>• Flesch Reading Ease (FRE)<br/>• Flesch-Kincaid Grade Level (FKGL)<br/>• Word and syllable delta computation"]
-    end
-
-    A <-->|IPC JSON Payload| E
-    E <-->|Standard Input / Output Stream| F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
-    J -->|Telemetry & Formatted Text JSON| F
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="SimplifyAI Hybrid Neuro-Symbolic Architecture" width="840" />
+</p>
 
 ---
 

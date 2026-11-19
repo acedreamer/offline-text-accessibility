@@ -1,0 +1,58 @@
+direction: right
+
+zone1: "01 · Client & Warm IPC Bridge" {
+  ui: "Electron + React UI\n(WCAG AAA · OpenDyslexic)"
+  bridge: "Localhost HTTP/IPC\nPersistent Bridge"
+  server: "simplify_server.py\n(T5 + spaCy Warm in RAM)"
+  ui -> bridge: "Raw Text + Profile"
+  bridge -> server
+}
+
+zone2: "02 · Symbolic Pre-Pass (utils.py)" {
+  clean: "Homophone & Contraction\nNormalization"
+  ctx_gate: "Literal Injury/Medical\nContext Detected?" { shape: diamond }
+  literal_keep: "Preserve Literal Phrase\n(Skip Idiom Swap)"
+  lexicon: "Morphological Rule Engine\n5,207 Idioms · 2,054 Jargon"
+
+  clean -> ctx_gate
+  ctx_gate -> literal_keep: "YES"
+  ctx_gate -> lexicon: "NO (Figurative)"
+}
+
+zone3: "03 · Neural Core (simplify.py)" {
+  prompt: "Inject ACCESS Control Tokens\n& Dynamic Max-Length Guard"
+  t5: "Fine-Tuned T5-Small\n(t5-simplifier · Offline CPU)"
+  quality_gate: "Valid Output &\nNo Repetition Loop?" { shape: diamond }
+
+  prompt -> t5 -> quality_gate
+}
+
+zone4: "04 · Cognitive Post-Pass & Telemetry" {
+  mode_gate: "Target Profile?" { shape: diamond }
+  dyslexia: "Dyslexia Mode\nClause Split + BDA Spacing + TTS"
+  adhd: "ADHD Focus Mode\nspaCy POS Noun Bold + 1/N Nav"
+  autism: "Autism Mode\nLiteral Clarity Verification"
+  telemetry: "Flesch Reading Ease &\nSentence Delta Telemetry"
+
+  mode_gate -> dyslexia: "Dyslexia"
+  mode_gate -> adhd: "ADHD"
+  mode_gate -> autism: "Autism"
+  dyslexia -> telemetry
+  adhd -> telemetry
+  autism -> telemetry
+}
+
+zone1.server -> zone2.clean: "Stage 1"
+zone2.literal_keep -> zone3.prompt
+zone2.lexicon -> zone3.prompt
+zone3.quality_gate -> zone4.mode_gate: "PASS" {
+  style.stroke: "#3fb950"
+}
+zone3.quality_gate -> zone4.mode_gate: "FAIL (Rule-Only Fallback)" {
+  style.stroke: "#d29922"
+  style.stroke-dash: 4
+}
+zone4.telemetry -> zone1.ui: "Simplified Payload + Metrics (~1-2s)" {
+  style.stroke: "#3fb950"
+  style.stroke-dash: 4
+}
